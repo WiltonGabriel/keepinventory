@@ -22,26 +22,24 @@ export default function MainLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setIsClient(true);
     const checkAuth = () => {
       const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-      if (!loggedIn) {
-        if (pathname !== "/login") {
-          router.replace("/login");
-        }
-      } else {
+      if (loggedIn) {
         inventoryService.initialize();
         setIsAuthenticated(true);
+      } else {
+        router.replace("/login");
       }
     };
     checkAuth();
 
-    const handleStorageChange = () => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "isLoggedIn") {
         checkAuth();
+      }
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -49,9 +47,9 @@ export default function MainLayout({
         window.removeEventListener('storage', handleStorageChange);
     };
 
-  }, [router, pathname]);
+  }, [router]);
 
-  if (!isClient || !isAuthenticated) {
+  if (isAuthenticated === null) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="loader"></div>
