@@ -6,7 +6,7 @@ import { type ThemeProviderProps } from "next-themes/dist/types"
 
 export function Providers({ children }: ThemeProviderProps) {
   return (
-    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
+    <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
       {children}
     </NextThemesProvider>
   )

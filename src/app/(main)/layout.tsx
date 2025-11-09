@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   SidebarProvider,
   Sidebar,
@@ -9,7 +9,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarInset,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Building } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
@@ -22,24 +21,54 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    if (!loggedIn) {
-      router.push("/login");
-    } else {
-      inventoryService.initialize();
-      setIsAuthenticated(true);
-    }
-  }, [router]);
+    const checkAuth = () => {
+      const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+      if (!loggedIn) {
+        if (pathname !== "/login") {
+          router.replace("/login");
+        }
+      } else {
+        inventoryService.initialize();
+        setIsAuthenticated(true);
+      }
+    };
+    checkAuth();
+
+    const handleStorageChange = () => {
+        checkAuth();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+    };
+
+  }, [router, pathname]);
 
   if (!isClient || !isAuthenticated) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-background">
         <div className="loader"></div>
+        <style jsx>{`
+          .loader {
+            border: 4px solid hsl(var(--muted));
+            border-top: 4px solid hsl(var(--primary));
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
