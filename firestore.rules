@@ -4,11 +4,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ATENÇÃO: As regras foram abertas para permitir o desenvolvimento.
-    // A autenticação será reimplementada.
-
+    // As regras agora exigem que o usuário esteja autenticado.
     match /{path=**} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
   }
 }

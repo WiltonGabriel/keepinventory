@@ -1,10 +1,10 @@
 
 'use client';
 
-import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
+import React, { DependencyList, createContext, useContext, ReactNode, useMemo } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { Auth } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 
 export interface FirebaseContextState {
@@ -73,7 +73,12 @@ export const useFirebase = (): FirebaseServices => {
   }
 
   if (!context.areServicesAvailable || !context.firebaseApp || !context.firestore || !context.auth) {
-    throw new Error('Firebase core services not available. Check FirebaseProvider props.');
+    // This component is likely used in a part of the app that is not wrapped in FirebaseClientProvider
+    // e.g. the login page. This is a normal scenario.
+    // Instead of throwing an error, we can consider what a graceful fallback should be.
+    // For now, the components using this hook should handle the possibility of services not being ready.
+    // However, the ProtectedLayout ensures this hook is only called when services are ready.
+    throw new Error('Firebase core services not available. Check that the component is wrapped in a FirebaseClientProvider and that it is inside a protected route.');
   }
 
   return {

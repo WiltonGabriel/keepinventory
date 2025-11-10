@@ -1,35 +1,29 @@
 
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
-import { Block } from "@/lib/types";
-import { PageHeader } from "@/components/page-header";
-import { DataTable } from "@/components/data-table";
-import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { HardConfirmationDialog } from "@/components/ui/hard-confirmation-dialog";
-import { BlockForm } from "./block-form";
-import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { useState, useMemo } from 'react';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import { Block } from '@/lib/types';
+import { PageHeader } from '@/components/page-header';
+import { DataTable } from '@/components/data-table';
+import { Button } from '@/components/ui/button';
+import { Edit, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { HardConfirmationDialog } from '@/components/ui/hard-confirmation-dialog';
+import { BlockForm } from './block-form';
+import { useToast } from '@/hooks/use-toast';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export default function BlocksPage() {
   const firestore = useFirestore();
-  const blocksCollection = useMemoFirebase(() => collection(firestore, "blocos"), [firestore]);
+  const blocksCollection = useMemoFirebase(() => collection(firestore, 'blocos'), [firestore]);
   const { data: blocks, isLoading } = useCollection<Block>(blocksCollection);
-  
-  const [searchQuery, setSearchQuery] = useState("");
+
+  const [searchQuery, setSearchQuery] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<Block | undefined>(undefined);
   const { toast } = useToast();
-
 
   const handleAdd = () => {
     setEditingBlock(undefined);
@@ -40,21 +34,21 @@ export default function BlocksPage() {
     setEditingBlock(block);
     setIsFormOpen(true);
   };
-  
+
   const handleDelete = (id: string) => {
     if (!firestore) return;
-    deleteDocumentNonBlocking(doc(firestore, "blocos", id));
-    toast({ title: "Bloco removido", description: "O bloco foi removido com sucesso." });
+    deleteDocumentNonBlocking(doc(firestore, 'blocos', id));
+    toast({ title: 'Bloco removido', description: 'O bloco foi removido com sucesso.' });
   };
 
   const handleFormSubmit = (values: { name: string }) => {
     if (!firestore) return;
     if (editingBlock) {
-      updateDocumentNonBlocking(doc(firestore, "blocos", editingBlock.id), values);
-      toast({ title: "Bloco atualizado", description: "As informações do bloco foram salvas." });
+      updateDocumentNonBlocking(doc(firestore, 'blocos', editingBlock.id), values);
+      toast({ title: 'Bloco atualizado', description: 'As informações do bloco foram salvas.' });
     } else {
-      addDocumentNonBlocking(collection(firestore, "blocos"), values);
-      toast({ title: "Bloco adicionado", description: "Um novo bloco foi criado com sucesso." });
+      addDocumentNonBlocking(collection(firestore, 'blocos'), values);
+      toast({ title: 'Bloco adicionado', description: 'Um novo bloco foi criado com sucesso.' });
     }
     setIsFormOpen(false);
     setEditingBlock(undefined);
@@ -62,23 +56,21 @@ export default function BlocksPage() {
 
   const filteredBlocks = useMemo(() => {
     if (!blocks) return [];
-    return blocks.filter((block) =>
-      block.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return blocks.filter((block) => block.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [blocks, searchQuery]);
 
   const columns = [
     {
-      accessorKey: "name",
-      header: "Nome",
+      accessorKey: 'name',
+      header: 'Nome',
       cell: ({ row }: { row: { original: Block } }) => row.original.name,
     },
     {
-      accessorKey: "actions",
-      header: "Ações",
+      accessorKey: 'actions',
+      header: 'Ações',
       cell: ({ row }: { row: { original: Block } }) => (
         <div className="flex gap-2">
-           <HardConfirmationDialog
+          <HardConfirmationDialog
             trigger={
               <Button variant="outline" size="icon">
                 <Edit className="h-4 w-4" />
@@ -119,20 +111,22 @@ export default function BlocksPage() {
         searchPlaceholder="Pesquisar blocos..."
       />
 
-      <Dialog open={isFormOpen} onOpenChange={(open) => { if(!open) setEditingBlock(undefined); setIsFormOpen(open);}}>
+      <Dialog
+        open={isFormOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditingBlock(undefined);
+          setIsFormOpen(open);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingBlock ? "Editar Bloco" : "Cadastrar Bloco"}</DialogTitle>
+            <DialogTitle>{editingBlock ? 'Editar Bloco' : 'Cadastrar Bloco'}</DialogTitle>
           </DialogHeader>
           <BlockForm onSubmit={handleFormSubmit} defaultValues={editingBlock} />
         </DialogContent>
       </Dialog>
-      
-      <DataTable
-        columns={columns}
-        data={filteredBlocks}
-        emptyStateMessage={isLoading ? "Carregando..." : "Nenhum bloco encontrado."}
-      />
+
+      <DataTable columns={columns} data={filteredBlocks} emptyStateMessage={isLoading ? 'Carregando...' : 'Nenhum bloco encontrado.'} />
     </div>
   );
 }
