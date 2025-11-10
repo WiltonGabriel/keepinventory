@@ -92,12 +92,14 @@ export default function AssetsPage() {
     if (!firestore) return;
 
     if (editingAsset) {
+      // When editing, only update name and status. Location is not changed.
       updateDocumentNonBlocking(doc(firestore, "assets", editingAsset.id), {
         name: values.name,
         status: values.status,
       });
       toast({ title: "Patrimônio atualizado", description: "As informações do item foram salvas." });
     } else {
+      // When creating, generate a new ID and save the full asset data.
       const newId = await generateNewAssetId(values.roomId);
       if (!newId) {
         toast({ variant: "destructive", title: "Falha ao gerar ID", description: "Não foi possível gerar um novo ID para o patrimônio." });
@@ -106,14 +108,11 @@ export default function AssetsPage() {
       
       const newAsset: Asset = { id: newId, name: values.name, roomId: values.roomId, status: values.status };
       
-      // Since addDocumentNonBlocking doesn't allow custom IDs, we use setDoc.
-      // The non-blocking error handling for this is managed by the helper.
       await setDoc(doc(firestore, "assets", newId), {
           name: newAsset.name,
           roomId: newAsset.roomId,
           status: newAsset.status
       }).catch(error => {
-          // This could be more specific, but for now we catch generic errors too
           console.error("Error setting document: ", error);
           toast({ variant: "destructive", title: "Erro ao salvar", description: "Não foi possível adicionar o patrimônio." });
       });

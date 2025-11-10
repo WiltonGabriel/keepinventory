@@ -56,34 +56,37 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
     },
   });
 
+  // Effect to populate location fields when editing an asset
   useEffect(() => {
-    if (defaultValues?.roomId) {
-        const room = allRooms.find(r => r.id === defaultValues.roomId);
-        if (room) {
-            const sector = allSectors.find(s => s.id === room.sectorId);
-            if (sector) {
-                setSelectedBlock(sector.blockId);
-                setSelectedSector(sector.id);
-                form.setValue('roomId', room.id);
-            }
+    if (isEditing && defaultValues?.roomId) {
+      const room = allRooms.find(r => r.id === defaultValues.roomId);
+      if (room) {
+        const sector = allSectors.find(s => s.id === room.sectorId);
+        if (sector) {
+          setSelectedBlock(sector.blockId);
+          setSelectedSector(sector.id);
+          // Set the form value for the room, which is the only one controlled by react-hook-form
+          form.setValue('roomId', room.id);
         }
+      }
     }
-  }, [defaultValues, form, allRooms, allSectors]);
+  }, [isEditing, defaultValues, allRooms, allSectors, form]);
 
-
+  // Effect to update available sectors when block changes
   useEffect(() => {
     if (selectedBlock) {
       setAvailableSectors(allSectors.filter(s => s.blockId === selectedBlock));
     } else {
       setAvailableSectors([]);
     }
-    // Only clear dependent fields if not in edit mode or if the block changes
+    // Don't reset dependent fields if we are in editing mode
     if (!isEditing) {
-      form.setValue('roomId', '');
-      setSelectedSector(null);
+        setSelectedSector(null);
+        form.setValue('roomId', '');
     }
-  }, [selectedBlock, form, allSectors, isEditing]);
+  }, [selectedBlock, allSectors, form, isEditing]);
 
+  // Effect to update available rooms when sector changes
   useEffect(() => {
     if (selectedSector) {
       setAvailableRooms(allRooms.filter(r => r.sectorId === selectedSector));
@@ -93,19 +96,21 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
     if (!isEditing) {
        form.setValue('roomId', '');
     }
-  }, [selectedSector, form, allRooms, isEditing]);
+  }, [selectedSector, allRooms, form, isEditing]);
+
 
   const handleBlockChange = (blockId: string) => {
+    if (isEditing) return;
     setSelectedBlock(blockId);
     setSelectedSector(null);
     form.setValue('roomId', '');
   }
 
   const handleSectorChange = (sectorId: string) => {
+    if (isEditing) return;
     setSelectedSector(sectorId);
     form.setValue('roomId', '');
   }
-
 
   return (
     <Form {...form}>
@@ -155,7 +160,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
               <Select onValueChange={handleBlockChange} value={selectedBlock ?? undefined} disabled={isEditing}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um bloco" />
+                    <SelectValue placeholder={isEditing ? 'Carregando...' : 'Selecione um bloco'} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -173,7 +178,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
               <Select onValueChange={handleSectorChange} value={selectedSector ?? undefined} disabled={!selectedBlock || isEditing}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um setor" />
+                    <SelectValue placeholder={isEditing ? 'Carregando...' : 'Selecione um setor'} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -195,7 +200,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
                 <Select onValueChange={field.onChange} value={field.value} disabled={!selectedSector || isEditing}>
                     <FormControl>
                     <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma sala" />
+                        <SelectValue placeholder={isEditing ? 'Carregando...' : 'Selecione uma sala'} />
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
