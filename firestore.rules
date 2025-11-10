@@ -78,17 +78,17 @@ service cloud.firestore {
     }
     
     /**
-     * @description Grants read and write access to any authenticated user for movements.
+     * @description Manages access to the movements collection for auditing.
      * @path /movements/{movementId}
-     * @allow (create) - Any authenticated user can create a movement log.
-     * @allow (list, get) - Any authenticated user can read movement logs.
-     * @deny (update, delete) - No one can modify or delete logs.
-     * @principle Allows creation and reading of movement logs for auditing, but makes them immutable.
+     * @principle Allows authenticated users to query the collection and create new logs, but prevents modification or deletion of existing logs to ensure data integrity.
      */
     match /movements/{movementId} {
-        allow get, create: if isSignedIn();
-        allow list: if isSignedIn();
-        allow update, delete: if false;
+      // Allow authenticated users to list documents (for queries) and get single documents.
+      allow read: if isSignedIn();
+      // Allow authenticated users to create new movement logs.
+      allow create: if isSignedIn();
+      // Explicitly deny updates and deletes to make logs immutable.
+      allow update, delete: if false;
     }
 
     function isSignedIn() {
