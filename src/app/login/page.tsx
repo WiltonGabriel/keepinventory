@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, AuthErrorCodes } from 'firebase/auth';
 import { initializeFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -68,8 +68,9 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="mx-auto flex w-full max-w-sm flex-col items-center justify-center space-y-6">
-        <div className="flex items-center gap-2 text-center">
-            <h1 className="text-3xl font-bold">KeepInventory</h1>
+        <div className="flex flex-col items-center gap-2 text-center">
+            <h1 className="text-5xl font-bold text-primary">UNIVAG</h1>
+            <p className="text-muted-foreground">Sistema de Gestão Patrimonial (SGP)</p>
         </div>
         <Card className="w-full">
           <CardContent className="grid gap-4 pt-6">
@@ -78,7 +79,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="m@example.com"
+                placeholder="admin@univag.com.br"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -90,6 +91,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
+                placeholder="******"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
