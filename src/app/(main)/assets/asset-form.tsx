@@ -24,6 +24,7 @@ import {
 import { Block, Sector, Room, Asset, assetStatusOptions } from "@/lib/types";
 import { useEffect, useMemo } from "react";
 
+// O Schema de validação principal. Campos de localização são obrigatórios.
 const formSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
   status: z.enum(assetStatusOptions, { required_error: "Selecione um status." }),
@@ -34,6 +35,7 @@ const formSchema = z.object({
 
 type AssetFormValues = z.infer<typeof formSchema>;
 
+// Tipos para as props do componente
 type AssetFormProps = {
   onSubmit: (values: Pick<AssetFormValues, 'name' | 'status' | 'roomId'>) => void;
   defaultValues?: Partial<Asset>;
@@ -46,6 +48,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
   
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(formSchema),
+    // Valores iniciais para o modo de CRIAÇÃO.
     defaultValues: {
       name: "",
       status: "Em Uso",
@@ -82,6 +85,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
   // O array de dependências garante que o efeito seja reavaliado se qualquer um dos dados necessários mudar.
   }, [defaultValues, allRooms, allSectors, blocks, form]);
   
+  // Observa as mudanças nos campos de bloco e setor para filtrar os próximos dropdowns.
   const watchedBlockId = form.watch("blockId");
   const watchedSectorId = form.watch("sectorId");
 
