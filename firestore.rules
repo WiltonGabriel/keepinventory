@@ -78,16 +78,16 @@ service cloud.firestore {
     }
     
     /**
-     * @description Manages access to the movements collection. Allows authenticated users to query the collection
-     * and create new logs, but prevents modification or deletion of existing logs to ensure data integrity.
-     * @path /movements
+     * @description Manages access to the movements collection.
+     * Allows any authenticated user to query the collection and create new logs.
+     * Prevents modification or deletion of existing logs to ensure data integrity.
      */
     match /movements/{movementId} {
-      // Allows authenticated users to query the collection (list) and read individual logs (get).
+      // Allow any authenticated user to read the collection (list) or individual documents (get).
       allow read: if isSignedIn();
-      // Allows authenticated users to create new movement logs.
+      // Allow any authenticated user to create new movement logs.
       allow create: if isSignedIn();
-      // Explicitly denies updates and deletes to make logs immutable.
+      // Explicitly deny updates and deletes to make logs immutable.
       allow update, delete: if false;
     }
 

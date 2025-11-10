@@ -9,37 +9,29 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Asset, Movement } from "@/lib/types";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy } from "firebase/firestore";
 import { format } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Edit3, PlusCircle } from "lucide-react";
+import { useMemo } from "react";
 
 
 interface HistoryLogProps {
   asset: Asset;
+  movements: Movement[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function HistoryLog({ asset, open, onOpenChange }: HistoryLogProps) {
-  const firestore = useFirestore();
+export function HistoryLog({ asset, movements, open, onOpenChange }: HistoryLogProps) {
 
-  const movementsQuery = useMemoFirebase(
-    () =>
-      firestore
-        ? query(
-            collection(firestore, "movements"),
-            where("assetId", "==", asset.id),
-            orderBy("timestamp", "desc")
-          )
-        : null,
-    [firestore, asset.id]
-  );
+  const assetMovements = useMemo(() => {
+    return movements
+      .filter(m => m.assetId === asset.id)
+      .sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
+  }, [movements, asset.id]);
 
-  const { data: movements, isLoading } = useCollection<Movement>(movementsQuery);
 
   const getActionIcon = (action: Movement["action"]) => {
     switch(action) {
@@ -93,13 +85,12 @@ export function HistoryLog({ asset, open, onOpenChange }: HistoryLogProps) {
         </DialogHeader>
         <ScrollArea className="h-72 w-full rounded-md border">
             <div className="p-4">
-                {isLoading && <p>Carregando histórico...</p>}
-                {!isLoading && movements && movements.length === 0 && (
+                {assetMovements.length === 0 && (
                     <p className="text-muted-foreground">Nenhuma movimentação encontrada para este item.</p>
                 )}
-                {!isLoading && movements && movements.length > 0 && (
+                {assetMovements.length > 0 && (
                     <ul className="space-y-4">
-                        {movements.map((movement) => (
+                        {assetMovements.map((movement) => (
                             <li key={movement.id} className="flex items-start gap-4">
                                 <div className="flex-shrink-0 pt-1">{getActionIcon(movement.action)}</div>
                                 <div className="flex-grow">
