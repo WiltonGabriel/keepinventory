@@ -56,7 +56,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
 
   // Effect to populate location fields and available options when the component mounts or dependencies change
   useEffect(() => {
-    if (defaultValues?.roomId) {
+    if (defaultValues?.roomId && allRooms.length > 0 && allSectors.length > 0) {
       const room = allRooms.find(r => r.id === defaultValues.roomId);
       if (room) {
         const sector = allSectors.find(s => s.id === room.sectorId);
@@ -65,32 +65,40 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
           const sectorId = sector.id;
 
           setSelectedBlock(blockId);
-          setSelectedSector(sectorId);
-          
           setAvailableSectors(allSectors.filter(s => s.blockId === blockId));
+          
+          setSelectedSector(sectorId);
           setAvailableRooms(allRooms.filter(r => r.sectorId === sectorId));
           
-          // Set form value for room
+          // Set form values
           form.setValue('roomId', room.id);
+          form.setValue('name', defaultValues.name || '');
+          form.setValue('status', defaultValues.status || 'Em Uso');
         }
       }
+    } else {
+        // Reset fields when there are no default values (create mode)
+        setSelectedBlock(null);
+        setSelectedSector(null);
+        setAvailableSectors([]);
+        setAvailableRooms([]);
     }
-  }, [defaultValues, allRooms, allSectors, form, blocks]);
+  }, [defaultValues, allRooms, allSectors, blocks, form]);
 
   const handleBlockChange = (blockId: string) => {
     setSelectedBlock(blockId);
+    setAvailableSectors(allSectors.filter(s => s.blockId === blockId));
     // Reset subsequent fields
     setSelectedSector(null);
-    form.setValue('roomId', '');
-    setAvailableSectors(allSectors.filter(s => s.blockId === blockId));
     setAvailableRooms([]);
+    form.setValue('roomId', '');
   }
 
   const handleSectorChange = (sectorId: string) => {
     setSelectedSector(sectorId);
+    setAvailableRooms(allRooms.filter(r => r.sectorId === sectorId));
      // Reset subsequent field
     form.setValue('roomId', '');
-    setAvailableRooms(allRooms.filter(r => r.sectorId === sectorId));
   }
 
 
