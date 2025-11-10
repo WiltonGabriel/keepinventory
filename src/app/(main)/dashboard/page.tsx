@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -6,6 +7,7 @@ import {
   Sector,
   Room,
   Asset,
+  Movement,
 } from '@/lib/types';
 import {
   Card,
@@ -29,6 +31,10 @@ import {
   BarChart3,
   CheckCircle,
   AlertTriangle,
+  History,
+  PlusCircle,
+  Edit3,
+  ArrowRight,
 } from 'lucide-react';
 import {
   useUser,
@@ -36,7 +42,11 @@ import {
   useFirestore,
   useMemoFirebase,
 } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, collectionGroup, query, orderBy, limit } from 'firebase/firestore';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 
 type Stats = {
@@ -68,11 +78,24 @@ export default function DashboardPage() {
     () => (firestore ? collection(firestore, 'blocks') : null),
     [firestore]
   );
+
+  const movementsQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? query(
+            collectionGroup(firestore, 'movements'),
+            orderBy('timestamp', 'desc'),
+            limit(10)
+          )
+        : null,
+    [firestore]
+  );
   
   const { data: assets } = useCollection<Asset>(assetsCollection);
   const { data: rooms } = useCollection<Room>(roomsCollection);
   const { data: sectors } = useCollection<Sector>(sectorsCollection);
   const { data: blocks } = useCollection<Block>(blocksCollection);
+  const { data: recentMovements, isLoading: isLoadingMovements } = useCollection<Movement>(movementsQuery);
 
   const stats: Stats = useMemo(() => {
     const assetCount = assets?.length || 0;
@@ -102,6 +125,43 @@ export default function DashboardPage() {
   const getAssetsForRoom = (roomId: string) => {
     return assets?.filter((a) => a.roomId === roomId) || [];
   };
+
+  const getActionIcon = (action: Movement["action"]) => {
+    switch(action) {
+      case 'Criado':
+        return <PlusCircle className="h-4 w-4 text-green-500" />;
+      case 'Status Alterado':
+        return <Edit3 className="h-4 w-4 text-blue-500" />;
+      case 'Movido':
+        return <ArrowRight className="h-4 w-4 text-orange-500" />;
+      case 'Nome Alterado':
+        return <Edit3 className="h-4 w-4 text-purple-500" />;
+      default:
+        return <History className="h-4 w-4" />;
+    }
+  }
+
+  const renderMovementDetails = (movement: Movement) => {
+    const assetLink = (
+      <Link href="/assets" className="font-bold text-primary hover:underline">
+        {movement.assetName} ({movement.assetId})
+      </Link>
+    );
+
+    switch (movement.action) {
+      case "Criado":
+        return <>O item {assetLink} foi criado com o nome "{movement.to}".</>;
+      case "Status Alterado":
+        return <>O status de {assetLink} foi alterado de <Badge variant="outline">{movement.from}</Badge> para <Badge variant="outline">{movement.to}</Badge>.</>;
+      case "Movido":
+        return <>{assetLink} foi movido de <Badge variant="secondary">{movement.from}</Badge> para <Badge variant="secondary">{movement.to}</Badge>.</>;
+      case "Nome Alterado":
+        return <>O nome de {assetLink} foi alterado de "{movement.from}" para "{movement.to}".</>;
+      default:
+        return "Ação desconhecida.";
+    }
+  };
+
 
   return (
     <div className="flex flex-col gap-8">
@@ -176,27 +236,32 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-             <Card className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm min-h-[300px]">
-              <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
-                <BarChart3 className="h-16 w-16 text-muted-foreground" />
-                <h3 className="text-2xl font-bold tracking-tight">
-                  Gráficos em Breve
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Esta área exibirá gráficos e visualizações sobre o inventário.
-                </p>
-              </CardContent>
-            </Card>
-             <Card className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm min-h-[300px]">
-              <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
-                <BarChart3 className="h-16 w-16 text-muted-foreground" />
-                <h3 className="text-2xl font-bold tracking-tight">
-                  Gráficos em Breve
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Esta área exibirá gráficos e visualizações sobre o inventário.
-                </p>
+           <div className="grid grid-cols-1 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Log de Atividade Recente</CardTitle>
+                <CardDescription>As 10 últimas movimentações no inventário.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingMovements && <p className="text-sm text-muted-foreground">Carregando atividades...</p>}
+                {!isLoadingMovements && recentMovements?.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhuma atividade recente encontrada.</p>
+                )}
+                {recentMovements && recentMovements.length > 0 && (
+                  <ul className="space-y-4">
+                    {recentMovements.map((movement) => (
+                      <li key={movement.id} className="flex items-start gap-3">
+                        <div className="flex-shrink-0 pt-1">{getActionIcon(movement.action)}</div>
+                        <div className="flex-grow">
+                          <div className="text-sm">{renderMovementDetails(movement)}</div>
+                          <p className="text-xs text-muted-foreground">
+                            {movement.timestamp ? format(movement.timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR }) : 'Data desconhecida'}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </CardContent>
             </Card>
            </div>
@@ -305,3 +370,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
