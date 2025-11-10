@@ -7,7 +7,7 @@ export interface Block {
 export interface Sector {
   id: string;
   name: string;
-  abbreviation: string;
+  abbreviation: string; // Should be 3 letters
   blockId: string;
 }
 
@@ -36,3 +36,5 @@ export interface UserProfile {
 
 export type Entity = Block | Sector | Room | Asset;
 export type EntityType = 'blocks' | 'sectors' | 'rooms' | 'assets';
+
+    

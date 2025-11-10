@@ -29,17 +29,17 @@ const generateId = (prefix: string): string => {
 // --- Seed Data ---
 const seedData = () => {
   const blocks: Block[] = [
-    { id: 'block-a', name: 'Bloco A - Principal' },
-    { id: 'block-b', name: 'Bloco B - Acadêmico' },
-    { id: 'block-c', name: 'Bloco C - Laboratórios e Aulas' },
-    { id: 'block-d', name: 'Bloco D - Acadêmico' },
+    { id: 'block-a', name: 'Bloco A' },
+    { id: 'block-b', name: 'Bloco B' },
+    { id: 'block-c', name: 'Bloco C' },
+    { id: 'block-d', name: 'Bloco D' },
   ];
   saveToStorage(KEYS.BLOCKS, blocks);
 
   const sectors: Sector[] = [
     // Bloco A - Administrativo & Acadêmico
-    { id: 'sector-ti', name: 'Tecnologia da Informação', abbreviation: 'TI', blockId: 'block-a' },
-    { id: 'sector-rh', name: 'Recursos Humanos', abbreviation: 'RH', blockId: 'block-a' },
+    { id: 'sector-ti', name: 'Tecnologia da Informação', abbreviation: 'TIN', blockId: 'block-a' },
+    { id: 'sector-rh', name: 'Recursos Humanos', abbreviation: 'RHS', blockId: 'block-a' },
     { id: 'sector-fin', name: 'Financeiro', abbreviation: 'FIN', blockId: 'block-a' },
     { id: 'sector-acad-a', name: 'Acadêmico Geral A', abbreviation: 'ACA', blockId: 'block-a' },
 
@@ -50,13 +50,13 @@ const seedData = () => {
 
 
     // Bloco C - Laboratórios & Acadêmico
-    { id: 'sector-labinfo', name: 'Laboratórios de Informática', abbreviation: 'LINFO', blockId: 'block-c' },
-    { id: 'sector-labsaude', name: 'Laboratórios de Saúde', abbreviation: 'LSAU', blockId: 'block-c' },
+    { id: 'sector-labinfo', name: 'Laboratórios de Informática', abbreviation: 'LAB', blockId: 'block-c' },
+    { id: 'sector-labsaude', name: 'Laboratórios de Saúde', abbreviation: 'SAU', blockId: 'block-c' },
     { id: 'sector-acad-c', name: 'Acadêmico Geral C', abbreviation: 'ACC', blockId: 'block-c' },
 
     // Bloco D - Acadêmico
-    { id: 'sector-saude', name: 'Ciências da Saúde', abbreviation: 'SAU', blockId: 'block-d' },
-    { id: 'sector-sociais', name: 'Ciências Sociais', abbreviation: 'SOC', blockId: 'block-d' },
+    { id: 'sector-saude-d', name: 'Ciências da Saúde D', abbreviation: 'SAD', blockId: 'block-d' },
+    { id: 'sector-sociais', name: 'Ciências Sociais Aplicadas', abbreviation: 'SOC', blockId: 'block-d' },
   ];
   saveToStorage(KEYS.SECTORS, sectors);
 
@@ -73,7 +73,7 @@ const seedData = () => {
     { id: 'room-b101', name: 'Sala B101', sectorId: 'sector-humanas' },
     { id: 'room-b102', name: 'Sala B102', sectorId: 'sector-humanas' },
     { id: 'room-b201', name: 'Sala B201', sectorId: 'sector-exatas' },
-    { id: 'room-b202', name: 'Sala B202', sectorId: 'sector-exatas' },
+    { id: 'room-b202', name: 'Sala B202', sectorId: 'sector-acad-b' },
     
     // Bloco C
     { id: 'room-c101', name: 'Lab Infor 01', sectorId: 'sector-labinfo' },
@@ -86,44 +86,41 @@ const seedData = () => {
     { id: 'room-c301', name: 'Sala C301', sectorId: 'sector-acad-c' },
 
     // Bloco D
-    { id: 'room-d101', name: 'Sala D101', sectorId: 'sector-saude' },
-    { id: 'room-d102', name: 'Sala D102', sectorId: 'sector-saude' },
+    { id: 'room-d101', name: 'Sala D101', sectorId: 'sector-saude-d' },
+    { id: 'room-d102', name: 'Sala D102', sectorId: 'sector-saude-d' },
     { id: 'room-d201', name: 'Sala D201', sectorId: 'sector-sociais' },
     { id: 'room-d202', name: 'Sala D202', sectorId: 'sector-sociais' },
   ];
   saveToStorage(KEYS.ROOMS, rooms);
 
-  let assets: Asset[] = [];
-  const addAsset = (name: string, roomId: string, status: AssetStatus = "Em Uso") => {
-    const room = rooms.find(r => r.id === roomId);
-    if (!room) return;
-    const sector = sectors.find(s => s.id === room.sectorId);
-    if (!sector) return;
-    const assetsInRoom = assets.filter(a => a.roomId === roomId);
-    const newAssetNumber = (assetsInRoom.length + 1).toString().padStart(3, '0');
-    //PAT<SIGLA_SETOR><NUMERO_SALA><SEQUENCIAL>
-    const newId = `PAT${sector.abbreviation}${room.name.replace(/\D/g, '')}${newAssetNumber}`;
-    assets.push({ id: newId, name, roomId, status });
-  }
+  const assets: Asset[] = [
+      // Bloco A - TI
+      { id: 'TIN001', name: 'Servidor Dell PowerEdge R740', roomId: 'room-a102', status: 'Em Uso' },
+      { id: 'TIN002', name: 'Switch Cisco Catalyst 9300', roomId: 'room-a102', status: 'Em Uso' },
+      { id: 'TIN003', name: 'Monitor Dell UltraSharp 27"', roomId: 'room-a101', status: 'Em Uso' },
+      // Bloco A - RH
+      { id: 'RHS001', name: 'Impressora HP LaserJet Pro', roomId: 'room-a103', status: 'Guardado' },
+      // Bloco A - Financeiro
+      { id: 'FIN001', name: 'Calculadora de Mesa Pro', roomId: 'room-a104', status: 'Em Uso' },
+      // Bloco A - Acadêmico
+      { id: 'ACA001', name: 'Projetor Multimídia Epson', roomId: 'room-a201', status: 'Em Uso' },
+      { id: 'ACA002', name: 'Lousa Branca 2x1m', roomId: 'room-a202', status: 'Em Uso' },
 
-  // Assets no Bloco A (Administrativo)
-  addAsset('Cadeira de Escritório', 'room-a101', 'Em Uso');
-  addAsset('Monitor Dell 24"', 'room-a101', 'Em Uso');
-  addAsset('Servidor de Rede', 'room-a102', 'Guardado');
-  addAsset('Impressora Multifuncional', 'room-a103', 'Em Uso');
-  
-  // Assets no Bloco C (Laboratórios)
-  addAsset('Computador i7 16GB RAM', 'room-c101', 'Em Uso');
-  addAsset('Projetor Epson PowerLite', 'room-c101', 'Em Uso');
-  addAsset('Esqueleto Humano', 'room-c201', 'Guardado');
-  addAsset('Microscópio Óptico', 'room-c202', 'Desconhecido');
-  addAsset('Lousa Digital', 'room-c301', 'Perdido');
+      // Bloco C - Laboratório de Informática
+      { id: 'LAB001', name: 'Computador Desktop i7/16GB', roomId: 'room-c101', status: 'Em Uso' },
+      { id: 'LAB002', name: 'Computador Desktop i7/16GB', roomId: 'room-c101', status: 'Em Uso' },
+      { id: 'LAB003', name: 'Monitor Gamer 144Hz', roomId: 'room-c102', status: 'Desconhecido' },
+      { id: 'LAB004', name: 'Roteador Wireless TP-Link', roomId: 'room-c103', status: 'Em Uso' },
+      { id: 'LAB005', name: 'Cadeira Gamer', roomId: 'room-c104', status: 'Perdido' },
 
-  // Assets no Bloco D (Acadêmico)
-  addAsset('Mesa de Aluno', 'room-d101');
-  addAsset('Cadeira de Aluno', 'room-d101');
+      // Bloco C - Laboratório de Saúde
+      { id: 'SAU001', name: 'Esqueleto Humano Anatomia', roomId: 'room-c201', status: 'Guardado' },
+      { id: 'SAU002', name: 'Microscópio Óptico Binocular', roomId: 'room-c202', status: 'Guardado' },
 
-
+      // Bloco D - Social
+      { id: 'SOC001', name: 'Cadeira Universitária Acolchoada', roomId: 'room-d201', status: 'Em Uso' },
+      { id: 'SOC002', name: 'Cadeira Universitária Acolchoada', roomId: 'room-d201', status: 'Em Uso' },
+  ];
   saveToStorage(KEYS.ASSETS, assets);
 };
 
@@ -150,7 +147,7 @@ export const inventoryService = {
     if (entityType === 'assets') {
       const assetData = item as Omit<Asset, 'id'>;
       const room = inventoryService.getById('rooms', assetData.roomId) as Room;
-      if (!room) {
+       if (!room) {
         console.error(`Error: Room with id "${assetData.roomId}" not found when adding asset.`);
         return undefined;
       }
@@ -159,9 +156,21 @@ export const inventoryService = {
         console.error(`Error: Sector with id "${room.sectorId}" not found when adding asset.`);
         return undefined;
       }
-      const assetsInRoom = inventoryService.getAssetsByRoomId(room.id);
-      const newAssetNumber = (assetsInRoom.length + 1).toString().padStart(3, '0');
-      const newId = `PAT${sector.abbreviation}${room.name.replace(/\D/g, '')}${newAssetNumber}`;
+
+      // New ID generation logic
+      const allAssets = inventoryService.getAll('assets') as Asset[];
+      const assetsInSector = allAssets.filter(asset => {
+        const assetRoom = inventoryService.getById('rooms', asset.roomId) as Room;
+        return assetRoom && assetRoom.sectorId === sector.id;
+      });
+
+      const existingNumbers = assetsInSector
+        .map(asset => parseInt(asset.id.replace(sector.abbreviation, ''), 10))
+        .filter(num => !isNaN(num));
+      
+      const nextNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
+      const newId = `${sector.abbreviation}${nextNumber.toString().padStart(3, '0')}`;
+
       newItem = { ...assetData, id: newId, status: assetData.status || "Em Uso" } as Asset;
     } else {
        const prefix = entityType.slice(0, -1);

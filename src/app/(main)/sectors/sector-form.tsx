@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,7 +23,7 @@ import { Block, Sector } from "@/lib/types";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
-  abbreviation: z.string().min(2, { message: "A sigla deve ter pelo menos 2 caracteres." }).max(5, {message: "A sigla deve ter no máximo 5 caracteres."}),
+  abbreviation: z.string().length(3, { message: "A sigla deve ter exatamente 3 caracteres." }).transform(val => val.toUpperCase()),
   blockId: z.string({ required_error: "Selecione um bloco." }),
 });
 
@@ -59,9 +60,9 @@ export function SectorForm({ onSubmit, defaultValues, blocks }: SectorFormProps)
           name="abbreviation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Sigla</FormLabel>
+              <FormLabel>Sigla (3 letras)</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: TI" {...field} />
+                <Input placeholder="Ex: TIN" {...field} maxLength={3} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -96,3 +97,5 @@ export function SectorForm({ onSubmit, defaultValues, blocks }: SectorFormProps)
     </Form>
   );
 }
+
+    
