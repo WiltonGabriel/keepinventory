@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Block, Sector, Room, Asset, Entity, EntityType } from './types';
@@ -22,7 +23,7 @@ const saveToStorage = <T>(key: string, data: T[]): void => {
 };
 
 const generateId = (prefix: string): string => {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${prefix.replace(/-/g, '')}${Date.now()}${Math.random().toString(36).substr(2, 9)}`;
 };
 
 // --- Seed Data ---
@@ -30,7 +31,7 @@ const seedData = () => {
   const blocks: Block[] = [
     { id: 'block-a', name: 'Bloco A - Principal' },
     { id: 'block-b', name: 'Bloco B - Acadêmico' },
-    { id: 'block-c', name: 'Bloco C - Laboratórios' },
+    { id: 'block-c', name: 'Bloco C - Laboratórios e Aulas' },
     { id: 'block-d', name: 'Bloco D - Acadêmico' },
   ];
   saveToStorage(KEYS.BLOCKS, blocks);
@@ -60,10 +61,11 @@ const seedData = () => {
   const rooms: Room[] = [
     // Bloco A
     { id: 'room-a101', name: 'Sala 101', sectorId: 'sector-ti' },
-    { id: 'room-a102', name: 'Sala 102', sectorId: 'sector-ti' },
-    { id: 'room-a103', name: 'Sala 103', sectorId: 'sector-rh' },
-    { id: 'room-a201', name: 'Sala 201', sectorId: 'sector-acad-a' },
-    { id: 'room-a202', name: 'Sala 202', sectorId: 'sector-acad-a' },
+    { id: 'room-a102', name: 'Data Center', sectorId: 'sector-ti' },
+    { id: 'room-a103', name: 'Sala de Reuniões RH', sectorId: 'sector-rh' },
+    { id: 'room-a104', name: 'Tesouraria', sectorId: 'sector-fin' },
+    { id: 'room-a201', name: 'Sala de Aula A201', sectorId: 'sector-acad-a' },
+    { id: 'room-a202', name: 'Sala de Aula A202', sectorId: 'sector-acad-a' },
 
     // Bloco B
     { id: 'room-b101', name: 'Sala B101', sectorId: 'sector-humanas' },
@@ -74,10 +76,12 @@ const seedData = () => {
     // Bloco C
     { id: 'room-c101', name: 'Lab Infor 01', sectorId: 'sector-labinfo' },
     { id: 'room-c102', name: 'Lab Infor 02', sectorId: 'sector-labinfo' },
+    { id: 'room-c103', name: 'Lab Infor 03', sectorId: 'sector-labinfo' },
+    { id: 'room-c104', name: 'Lab Infor 04', sectorId: 'sector-labinfo' },
+    { id: 'room-c105', name: 'Lab Infor 05', sectorId: 'sector-labinfo' },
     { id: 'room-c201', name: 'Lab Anatomia', sectorId: 'sector-labsaude' },
     { id: 'room-c202', name: 'Lab Química', sectorId: 'sector-labsaude' },
     { id: 'room-c301', name: 'Sala C301', sectorId: 'sector-acad-c' },
-
 
     // Bloco D
     { id: 'room-d101', name: 'Sala D101', sectorId: 'sector-saude' },
@@ -113,6 +117,10 @@ const seedData = () => {
   addAsset('Microscópio Óptico', 'room-c202');
   addAsset('Lousa Digital', 'room-c301');
 
+  // Assets no Bloco D (Acadêmico)
+  addAsset('Mesa de Aluno', 'room-d101');
+  addAsset('Cadeira de Aluno', 'room-d101');
+
 
   saveToStorage(KEYS.ASSETS, assets);
 };
@@ -146,7 +154,8 @@ export const inventoryService = {
       const newId = `PAT${sector.abbreviation}${room.name.replace(/\D/g, '')}${newAssetNumber}`;
       newItem = { ...item, id: newId } as Asset;
     } else {
-       newItem = { ...item, id: generateId(entityType.slice(0, -1)) } as Entity;
+       const prefix = entityType.slice(0, -1);
+       newItem = { ...item, id: generateId(prefix) } as Entity;
     }
     const newItems = [...items, newItem];
     saveToStorage(KEYS[entityType.toUpperCase() as keyof typeof KEYS], newItems);
