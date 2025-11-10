@@ -5,7 +5,7 @@
  * This ruleset allows read and write access to any authenticated user. Since the application does not specify user-specific data or roles, the rules are open to all authenticated users.
  *
  * Data Structure:
- * The data is organized into four top-level collections: /blocks/{blockId}, /sectors/{sectorId}, /rooms/{roomId}, and /assets/{assetId}. There are no nested collections.
+ * The data is organized into five top-level collections: /blocks/{blockId}, /sectors/{sectorId}, /rooms/{roomId}, /assets/{assetId}, and /movements/{movementId}. There are no nested collections.
  *
  * Key Security Decisions:
  * - All authenticated users can read and write to all collections.
@@ -90,6 +90,22 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow update: if isSignedIn();
       allow delete: if isSignedIn();
+    }
+    
+    /**
+     * @description Grants read and write access to any authenticated user for movements.
+     * @path /movements/{movementId}
+     * @allow (create) - Any authenticated user can create a movement log.
+     * @allow (list) - Any authenticated user can read movement logs.
+     * @deny (update, delete) - No one can modify or delete logs.
+     * @principle Allows creation and reading of movement logs for auditing, but makes them immutable.
+     */
+    match /movements/{movementId} {
+        allow create: if isSignedIn();
+        allow list: if isSignedIn();
+        allow get: if isSignedIn();
+        allow update: if false;
+        allow delete: if false;
     }
 
     function isSignedIn() {

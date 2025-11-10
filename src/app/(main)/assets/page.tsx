@@ -6,15 +6,16 @@ import { Asset, Room, Sector, Block, AssetStatus } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, History } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { AssetForm } from "./asset-form";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc, getDocs, query, where, limit, setDoc } from "firebase/firestore";
-import { deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc, getDocs, query, where, setDoc, serverTimestamp, addDoc } from "firebase/firestore";
+import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { HistoryLog } from "./history-log";
 
 export default function AssetsPage() {
   const firestore = useFirestore();
@@ -31,6 +32,7 @@ export default function AssetsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>(undefined);
+  const [historyAsset, setHistoryAsset] = useState<Asset | null>(null);
   const { toast } = useToast();
 
   const handleAdd = () => {
@@ -42,6 +44,10 @@ export default function AssetsPage() {
     setEditingAsset(asset);
     setIsFormOpen(true);
   };
+
+  const handleShowHistory = (asset: Asset) => {
+    setHistoryAsset(asset);
+  }
 
   const handleDelete = (id: string) => {
     if (!firestore) return;
@@ -88,19 +94,54 @@ export default function AssetsPage() {
     return newId;
   }
 
+  const logMovement = async (assetId: string, assetName: string, action: "Criado" | "Status Alterado" | "Movido" | "Nome Alterado", from: string, to: string) => {
+      if (!firestore) return;
+      try {
+        await addDoc(collection(firestore, 'movements'), {
+            assetId,
+            assetName,
+            action,
+            from,
+            to,
+            timestamp: serverTimestamp(),
+        });
+      } catch (error) {
+        console.error("Error logging movement:", error);
+      }
+  }
+
+
   const handleFormSubmit = async (values: Omit<Asset, 'id'> & { roomId: string; status: AssetStatus; }) => {
-    if (!firestore) return;
+    if (!firestore || !rooms) return;
 
     if (editingAsset) {
-      // When editing, update all fields.
-      updateDocumentNonBlocking(doc(firestore, "assets", editingAsset.id), {
-        name: values.name,
-        status: values.status,
-        roomId: values.roomId,
-      });
-      toast({ title: "Patrimônio atualizado", description: "As informações do item foram salvas." });
+      const updates: Partial<Asset> = {};
+      let changed = false;
+
+      if (values.name !== editingAsset.name) {
+          updates.name = values.name;
+          await logMovement(editingAsset.id, values.name, "Nome Alterado", editingAsset.name, values.name);
+          changed = true;
+      }
+      if (values.status !== editingAsset.status) {
+          updates.status = values.status;
+          await logMovement(editingAsset.id, values.name, "Status Alterado", editingAsset.status, values.status);
+          changed = true;
+      }
+      if (values.roomId !== editingAsset.roomId) {
+          updates.roomId = values.roomId;
+          const fromRoom = rooms.find(r => r.id === editingAsset.roomId)?.name || 'N/A';
+          const toRoom = rooms.find(r => r.id === values.roomId)?.name || 'N/A';
+          await logMovement(editingAsset.id, values.name, "Movido", fromRoom, toRoom);
+          changed = true;
+      }
+
+      if (changed) {
+          updateDocumentNonBlocking(doc(firestore, "assets", editingAsset.id), updates);
+          toast({ title: "Patrimônio atualizado", description: "As informações do item foram salvas." });
+      }
+
     } else {
-      // When creating, generate a new ID and save the full asset data.
       const newId = await generateNewAssetId(values.roomId);
       if (!newId) {
         toast({ variant: "destructive", title: "Falha ao gerar ID", description: "Não foi possível gerar um novo ID para o patrimônio." });
@@ -109,7 +150,6 @@ export default function AssetsPage() {
       
       const newAsset: Asset = { id: newId, name: values.name, roomId: values.roomId, status: values.status };
       
-      // Use setDoc with the new ID
       await setDoc(doc(firestore, "assets", newId), {
           name: newAsset.name,
           roomId: newAsset.roomId,
@@ -118,6 +158,8 @@ export default function AssetsPage() {
           console.error("Error setting document: ", error);
           toast({ variant: "destructive", title: "Erro ao salvar", description: "Não foi possível adicionar o patrimônio." });
       });
+
+      await logMovement(newId, newAsset.name, "Criado", "N/A", newAsset.name);
 
       toast({ title: "Patrimônio adicionado", description: `Um novo item (${newId}) foi criado com sucesso.` });
     }
@@ -169,7 +211,11 @@ export default function AssetsPage() {
     {
       accessorKey: "name",
       header: "Nome",
-      cell: ({ row }: { row: { original: Asset } }) => row.original.name,
+      cell: ({ row }: { row: { original: Asset } }) => (
+        <button onClick={() => handleShowHistory(row.original)} className="text-primary hover:underline">
+            {row.original.name}
+        </button>
+      ),
     },
      {
       accessorKey: "status",
@@ -188,6 +234,9 @@ export default function AssetsPage() {
       header: "Ações",
       cell: ({ row }: { row: { original: Asset } }) => (
         <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={() => handleShowHistory(row.original)}>
+                <History className="h-4 w-4" />
+            </Button>
           <Button variant="outline" size="icon" onClick={() => handleEdit(row.original)}>
             <Edit className="h-4 w-4" />
           </Button>
@@ -242,6 +291,10 @@ export default function AssetsPage() {
         </DialogContent>
       </Dialog>
       
+      {historyAsset && (
+        <HistoryLog asset={historyAsset} open={!!historyAsset} onOpenChange={(open) => !open && setHistoryAsset(null)} />
+      )}
+
       <DataTable
         columns={columns}
         data={filteredAssets}

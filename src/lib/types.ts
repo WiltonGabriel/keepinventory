@@ -1,4 +1,5 @@
 
+
 export interface Block {
   id: string;
   name: string;
@@ -28,13 +29,23 @@ export interface Asset {
   status: AssetStatus;
 }
 
+export interface Movement {
+    id: string;
+    assetId: string;
+    assetName: string;
+    timestamp: any; // Firestore Timestamp
+    action: "Criado" | "Status Alterado" | "Movido" | "Nome Alterado";
+    from: string;
+    to: string;
+}
+
 export interface UserProfile {
     name: string;
     email: string;
     role: string;
 }
 
-export type Entity = Block | Sector | Room | Asset;
-export type EntityType = 'blocks' | 'sectors' | 'rooms' | 'assets';
+export type Entity = Block | Sector | Room | Asset | Movement;
+export type EntityType = 'blocks' | 'sectors' | 'rooms' | 'assets' | 'movements';
 
     
