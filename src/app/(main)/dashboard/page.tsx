@@ -12,20 +12,23 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Archive, Building, DoorOpen, Building2, BarChart3, History } from "lucide-react";
+import { Archive, Building, DoorOpen, Building2, BarChart3, History, CheckCircle } from "lucide-react";
 
 type Stats = {
   assetCount: number;
+  activeAssetCount: number;
   roomCount: number;
   sectorCount: number;
 };
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats>({ assetCount: 0, roomCount: 0, sectorCount: 0 });
+  const [stats, setStats] = useState<Stats>({ assetCount: 0, activeAssetCount: 0, roomCount: 0, sectorCount: 0 });
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
+    // Esta função será chamada sempre que a página do dashboard for carregada/recarregada.
+    // Isso garante que os dados exibidos estejam sempre atualizados.
     setStats(inventoryService.getStats());
     setBlocks(inventoryService.getAll("blocks") as Block[]);
     const userData = localStorage.getItem("user");
@@ -66,17 +69,17 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                 <div className="text-2xl font-bold">{stats.assetCount}</div>
-                <p className="text-xs text-muted-foreground">Itens cadastrados</p>
+                <p className="text-xs text-muted-foreground">Itens cadastrados no sistema</p>
                 </CardContent>
             </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Itens Ativos</CardTitle>
-                <Archive className="h-4 w-4 text-muted-foreground" />
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                <div className="text-2xl font-bold">{stats.assetCount}</div>
-                <p className="text-xs text-muted-foreground">Status normal</p>
+                <div className="text-2xl font-bold">{stats.activeAssetCount}</div>
+                <p className="text-xs text-muted-foreground">Itens com status "Em Uso"</p>
                 </CardContent>
             </Card>
             <Card>
@@ -86,7 +89,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                 <div className="text-2xl font-bold">{stats.sectorCount}</div>
-                <p className="text-xs text-muted-foreground">Setores mapeados</p>
+                <p className="text-xs text-muted-foreground">Setores mapeados na instituição</p>
                 </CardContent>
             </Card>
           </div>

@@ -203,12 +203,14 @@ export const inventoryService = {
 
   // --- Statistics ---
   getStats: () => {
-     if (typeof window === 'undefined') return { assetCount: 0, roomCount: 0, sectorCount: 0 };
+     if (typeof window === 'undefined') return { assetCount: 0, activeAssetCount: 0, roomCount: 0, sectorCount: 0 };
      const assets = getFromStorage<Asset>(KEYS.ASSETS);
      const rooms = getFromStorage<Room>(KEYS.ROOMS);
      const sectors = getFromStorage<Sector>(KEYS.SECTORS);
+     const activeAssetCount = assets.filter(a => a.status === 'Em Uso').length;
      return {
         assetCount: assets.length,
+        activeAssetCount: activeAssetCount,
         roomCount: rooms.length,
         sectorCount: sectors.length
      }
