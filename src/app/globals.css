@@ -4,6 +4,10 @@
 
 @layer base {
   :root {
+    /* Font size multiplier */
+    --font-size-multiplier: 1; 
+
+    /* Colors */
     --background: 216 67% 98%; /* #F4F7FC */
     --foreground: 0 0% 20%; /* #333333 */
     --card: 0 0% 100%; /* #FFFFFF */
@@ -11,8 +15,11 @@
     --popover: 0 0% 100%; /* #FFFFFF */
     --popover-foreground: 0 0% 20%; /* #333333 */
     
-    /* A cor primária agora será a base para as outras cores */
-    --primary: 206 100% 24%; /* #00447C */
+    /* Primary Colors (definable by user) */
+    --primary-light: 206 100% 24%; /* Default light theme primary */
+    --primary-dark: 206 100% 70%; /* Default dark theme primary */
+    
+    --primary: var(--primary-light);
     --primary-foreground: 0 0% 98%;
     
     /* Secundária e Accent serão derivadas da cor primária */
@@ -44,7 +51,7 @@
     --popover-foreground: 0 0% 88%;
 
     /* Cor primária no modo escuro */
-    --primary: 206 100% 70%;
+    --primary: var(--primary-dark);
     --primary-foreground: 206 100% 10%;
 
     /* Secundária e Accent derivadas da cor primária no modo escuro */
@@ -75,4 +82,20 @@
     @apply bg-background text-foreground font-body;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+  
+  /* Apply font size multiplier */
+  h1 { font-size: calc(2.25rem * var(--font-size-multiplier)); }
+  h2 { font-size: calc(1.875rem * var(--font-size-multiplier)); }
+  h3 { font-size: calc(1.5rem * var(--font-size-multiplier)); }
+  h4 { font-size: calc(1.25rem * var(--font-size-multiplier)); }
+  p, div, span, li, a, label, button, th, td { font-size: calc(1rem * var(--font-size-multiplier)); }
+  small, .text-sm { font-size: calc(0.875rem * var(--font-size-multiplier)); }
+  .text-xs { font-size: calc(0.75rem * var(--font-size-multiplier)); }
+  .text-lg { font-size: calc(1.125rem * var(--font-size-multiplier)); }
+  .text-xl { font-size: calc(1.25rem * var(--font-size-multiplier)); }
+  .text-2xl { font-size: calc(1.5rem * var(--font-size-multiplier)); }
+  .text-3xl { font-size: calc(1.875rem * var(--font-size-multiplier)); }
+  .text-4xl { font-size: calc(2.25rem * var(--font-size-multiplier)); }
+  .text-5xl { font-size: calc(3rem * var(--font-size-multiplier)); }
+  
 }
