@@ -52,7 +52,7 @@ export function SiteHeader() {
       {user && (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-2">
                     <Avatar className="h-8 w-8 border-2 border-border">
                         <AvatarFallback>{getInitials(user.displayName || user.email)}</AvatarFallback>
                     </Avatar>
@@ -83,4 +83,3 @@ export function SiteHeader() {
     </header>
   );
 }
-
