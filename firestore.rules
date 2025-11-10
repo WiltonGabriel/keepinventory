@@ -83,8 +83,8 @@ service cloud.firestore {
      * Prevents modification of existing logs to ensure data integrity.
      */
     match /movements/{movementId} {
-      // Allow authenticated users to read, create, and delete movement logs.
-      allow read, create, delete: if isSignedIn();
+      // Allow authenticated users to query the collection (list), read single docs (get), create, and delete movement logs.
+      allow list, get, create, delete: if isSignedIn();
       // Explicitly deny updates to make logs immutable once created.
       allow update: if false;
     }
