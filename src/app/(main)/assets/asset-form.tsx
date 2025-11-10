@@ -60,7 +60,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
   // Efeito para popular os campos no modo de edição
   useEffect(() => {
     // Só executa se estiver editando e os dados necessários estiverem carregados
-    if (defaultValues?.roomId && allRooms.length > 0 && allSectors.length > 0 && blocks.length > 0) {
+    if (defaultValues?.id && allRooms.length > 0 && allSectors.length > 0 && blocks.length > 0) {
       const room = allRooms.find(r => r.id === defaultValues.roomId);
       if (room) {
         const sector = allSectors.find(s => s.id === room.sectorId);
@@ -79,12 +79,8 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
           }
         }
       }
-    } else if (defaultValues) {
-        // Fallback para preencher nome e status se a localização não puder ser determinada
-        form.setValue('name', defaultValues.name || "");
-        form.setValue('status', defaultValues.status || "Em Uso");
     }
-  }, [defaultValues, allRooms, allSectors, blocks, form.reset, form.setValue, form]);
+  }, [defaultValues, allRooms, allSectors, blocks, form.reset, form]);
   
   const watchedBlockId = form.watch("blockId");
   const watchedSectorId = form.watch("sectorId");
