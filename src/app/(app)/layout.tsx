@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { Building, LogOut } from 'lucide-react';
+import { Warehouse, LogOut } from 'lucide-react';
 import { SiteHeader } from '@/components/site-header';
 import { MainNav } from '@/components/main-nav';
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,7 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
         <Sidebar>
           <SidebarHeader>
             <div className="flex items-center gap-3 p-2">
-              <Building className="h-8 w-8 text-primary" />
+              <Warehouse className="h-8 w-8 text-primary" />
               <div className="flex flex-col">
                 <span className="font-bold text-xl text-primary">UNIVAG</span>
                 <span className="text-xs text-muted-foreground -mt-1">SGP</span>
