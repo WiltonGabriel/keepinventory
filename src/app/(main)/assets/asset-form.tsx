@@ -24,7 +24,6 @@ import {
 import { Block, Sector, Room, Asset, assetStatusOptions } from "@/lib/types";
 import { useEffect, useMemo } from "react";
 
-// O Schema de validação principal. Campos de localização são obrigatórios.
 const formSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
   status: z.enum(assetStatusOptions, { required_error: "Selecione um status." }),
@@ -35,7 +34,6 @@ const formSchema = z.object({
 
 type AssetFormValues = z.infer<typeof formSchema>;
 
-// Tipos para as props do componente
 type AssetFormProps = {
   onSubmit: (values: Pick<AssetFormValues, 'name' | 'status' | 'roomId'>) => void;
   defaultValues?: Partial<Asset>;
@@ -48,7 +46,6 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
   
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(formSchema),
-    // Valores iniciais para o modo de CRIAÇÃO.
     defaultValues: {
       name: "",
       status: "Em Uso",
@@ -56,21 +53,16 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
       sectorId: "",
       roomId: "",
     },
-    // BUG 1 FIX: A validação só ocorrerá no submit, não ao carregar.
     mode: 'onSubmit', 
     reValidateMode: 'onChange',
   });
 
-  // BUG 2 FIX: Este useEffect agora lida de forma robusta com o preenchimento do formulário no modo "Editar".
   useEffect(() => {
-    // A lógica só é executada se houver um patrimônio para editar (defaultValues.id existe)
-    // e se todos os dados de localização estiverem carregados e disponíveis.
     if (defaultValues?.id && allRooms.length > 0 && allSectors.length > 0 && blocks.length > 0) {
       
       const room = allRooms.find(r => r.id === defaultValues.roomId);
       if (room) {
         const sector = allSectors.find(s => s.id === room.sectorId);
-        // Apenas se a hierarquia completa (sala e setor) for encontrada, o formulário é preenchido.
         if (sector) {
           form.reset({
             name: defaultValues.name || "",
@@ -82,26 +74,21 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
         }
       }
     }
-  // O array de dependências garante que o efeito seja reavaliado se qualquer um dos dados necessários mudar.
   }, [defaultValues, allRooms, allSectors, blocks, form]);
   
-  // Observa as mudanças nos campos de bloco e setor para filtrar os próximos dropdowns.
   const watchedBlockId = form.watch("blockId");
   const watchedSectorId = form.watch("sectorId");
 
-  // Filtra os setores disponíveis com base no bloco selecionado.
   const availableSectors = useMemo(() => {
     if (!watchedBlockId) return [];
     return allSectors.filter(s => s.blockId === watchedBlockId);
   }, [watchedBlockId, allSectors]);
 
-  // Filtra as salas disponíveis com base no setor selecionado.
   const availableRooms = useMemo(() => {
     if (!watchedSectorId) return [];
     return allRooms.filter(r => r.sectorId === watchedSectorId);
   }, [watchedSectorId, allRooms]);
 
-  // Prepara os dados para o envio, removendo os IDs de controle de bloco e setor.
   const handleFormSubmit = (values: AssetFormValues) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { blockId, sectorId, ...submissionValues } = values;
@@ -159,7 +146,6 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
                     <FormLabel>Bloco</FormLabel>
                     <Select onValueChange={(value) => {
                         field.onChange(value);
-                        // Ao mudar o bloco, reseta o setor e a sala para forçar uma nova seleção.
                         form.setValue('sectorId', '', { shouldValidate: true });
                         form.setValue('roomId', '', { shouldValidate: true });
                     }} value={field.value}>
@@ -189,7 +175,6 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
                     <FormLabel>Setor</FormLabel>
                     <Select onValueChange={(value) => {
                         field.onChange(value);
-                        // Ao mudar o setor, reseta a sala.
                         form.setValue('roomId', '', { shouldValidate: true });
                     }} value={field.value} disabled={!watchedBlockId || availableSectors.length === 0}>
                         <FormControl>

@@ -27,7 +27,6 @@ interface HistoryLogProps {
 export function HistoryLog({ asset, open, onOpenChange }: HistoryLogProps) {
   const firestore = useFirestore();
 
-  // A busca de dados agora é feita aqui dentro.
   const movementsQuery = useMemoFirebase(
     () =>
       firestore && asset

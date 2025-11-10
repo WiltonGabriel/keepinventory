@@ -12,8 +12,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { AssetForm } from "./asset-form";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
-import { collection, doc, getDocs, query, where, serverTimestamp, writeBatch, WriteBatch } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc, getDocs, query, where, serverTimestamp, writeBatch, WriteBatch, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { HistoryLog } from "./history-log";
 
 export default function AssetsPage() {
@@ -67,11 +67,12 @@ export default function AssetsPage() {
         await batch.commit();
         toast({ title: "Patrimônio removido", description: "O item e seu histórico foram removidos com sucesso." });
     } catch (error) {
-        const contextualError = new FirestorePermissionError({
-            operation: 'delete',
-            path: `assets/${id} and its movements`,
+        console.error("Error deleting asset and movements: ", error);
+        toast({
+            variant: "destructive",
+            title: "Erro ao remover",
+            description: "Não foi possível remover o patrimônio e seu histórico.",
         });
-        errorEmitter.emit('permission-error', contextualError);
     }
 };
 
@@ -131,71 +132,65 @@ export default function AssetsPage() {
   const handleFormSubmit = async (values: Pick<Asset, 'name' | 'status' | 'roomId'>) => {
     if (!firestore || !rooms) return;
 
-    const batch = writeBatch(firestore);
+    try {
+      if (editingAsset) { // Logic for UPDATE
+          const batch = writeBatch(firestore);
+          const assetRef = doc(firestore, "assets", editingAsset.id);
+          const updates: Partial<Asset> = {};
+          let changed = false;
 
-    if (editingAsset) { // Logic for UPDATE
-        const assetRef = doc(firestore, "assets", editingAsset.id);
-        const updates: Partial<Asset> = {};
-        let changed = false;
+          if (values.name !== editingAsset.name) {
+              updates.name = values.name;
+              logMovement(batch, editingAsset.id, values.name, "Nome Alterado", editingAsset.name, values.name);
+              changed = true;
+          }
+          if (values.status !== editingAsset.status) {
+              updates.status = values.status;
+              logMovement(batch, editingAsset.id, values.name, "Status Alterado", editingAsset.status, values.status);
+              changed = true;
+          }
+          if (values.roomId !== editingAsset.roomId) {
+              updates.roomId = values.roomId;
+              const fromRoom = rooms.find(r => r.id === editingAsset.roomId)?.name || 'N/A';
+              const toRoom = rooms.find(r => r.id === values.roomId)?.name || 'N/A';
+              logMovement(batch, editingAsset.id, values.name, "Movido", fromRoom, toRoom);
+              changed = true;
+          }
 
-        if (values.name !== editingAsset.name) {
-            updates.name = values.name;
-            logMovement(batch, editingAsset.id, values.name, "Nome Alterado", editingAsset.name, values.name);
-            changed = true;
-        }
-        if (values.status !== editingAsset.status) {
-            updates.status = values.status;
-            logMovement(batch, editingAsset.id, values.name, "Status Alterado", editingAsset.status, values.status);
-            changed = true;
-        }
-        if (values.roomId !== editingAsset.roomId) {
-            updates.roomId = values.roomId;
-            const fromRoom = rooms.find(r => r.id === editingAsset.roomId)?.name || 'N/A';
-            const toRoom = rooms.find(r => r.id === values.roomId)?.name || 'N/A';
-            logMovement(batch, editingAsset.id, values.name, "Movido", fromRoom, toRoom);
-            changed = true;
-        }
+          if (changed) {
+              batch.update(assetRef, updates);
+              await batch.commit();
+              toast({ title: "Patrimônio atualizado", description: "As informações do item foram salvas." });
+          }
+      } else { // Logic for CREATE
+          const newId = await generateNewAssetId(values.roomId);
+          if (!newId) {
+              toast({ variant: "destructive", title: "Falha ao gerar ID", description: "Não foi possível gerar um novo ID para o patrimônio." });
+              return;
+          }
+          
+          const batch = writeBatch(firestore);
+          const newAssetData = { name: values.name, roomId: values.roomId, status: values.status };
+          const assetRef = doc(firestore, "assets", newId);
+          batch.set(assetRef, newAssetData);
 
-        if (changed) {
-            batch.update(assetRef, updates);
-            batch.commit().then(() => {
-                toast({ title: "Patrimônio atualizado", description: "As informações do item foram salvas." });
-            }).catch(() => {
-                 const contextualError = new FirestorePermissionError({
-                    operation: 'update',
-                    path: assetRef.path,
-                    requestResourceData: updates,
-                 });
-                 errorEmitter.emit('permission-error', contextualError);
-            });
-        }
-    } else { // Logic for CREATE
-        const newId = await generateNewAssetId(values.roomId);
-        if (!newId) {
-            toast({ variant: "destructive", title: "Falha ao gerar ID", description: "Não foi possível gerar um novo ID para o patrimônio." });
-            return;
-        }
-        
-        const newAssetData = { name: values.name, roomId: values.roomId, status: values.status };
-        const assetRef = doc(firestore, "assets", newId);
-        batch.set(assetRef, newAssetData);
+          logMovement(batch, newId, values.name, "Criado", "N/A", values.name);
 
-        logMovement(batch, newId, values.name, "Criado", "N/A", values.name);
+          await batch.commit();
+          toast({ title: "Patrimônio adicionado", description: `Um novo item (${newId}) foi criado com sucesso.` });
+      }
 
-        batch.commit().then(() => {
-            toast({ title: "Patrimônio adicionado", description: `Um novo item (${newId}) foi criado com sucesso.` });
-        }).catch(() => {
-            const contextualError = new FirestorePermissionError({
-                operation: 'create',
-                path: assetRef.path,
-                requestResourceData: newAssetData,
-            });
-            errorEmitter.emit('permission-error', contextualError);
+      setIsFormOpen(false);
+      setEditingAsset(undefined);
+
+    } catch (error) {
+       console.error("Error submitting asset form: ", error);
+       toast({
+            variant: "destructive",
+            title: "Erro ao salvar",
+            description: "Não foi possível salvar as informações do patrimônio.",
         });
     }
-
-    setIsFormOpen(false);
-    setEditingAsset(undefined);
   };
 
 
@@ -334,5 +329,4 @@ export default function AssetsPage() {
       />
     </div>
   );
-
-    
+}
