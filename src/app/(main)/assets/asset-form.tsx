@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Block, Sector, Room, Asset, assetStatusOptions, AssetStatus } from "@/lib/types";
+import { Block, Sector, Room, Asset, assetStatusOptions } from "@/lib/types";
 import { useEffect, useState } from "react";
 
 const formSchema = z.object({
@@ -28,8 +28,10 @@ const formSchema = z.object({
   status: z.enum(assetStatusOptions, { required_error: "Selecione um status." }),
 });
 
+type AssetFormValues = z.infer<typeof formSchema>;
+
 type AssetFormProps = {
-  onSubmit: (values: z.infer<typeof formSchema>) => void;
+  onSubmit: (values: AssetFormValues) => void;
   defaultValues?: Partial<Asset>;
   blocks: Block[];
   allSectors: Sector[];
@@ -43,9 +45,15 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
   const [availableSectors, setAvailableSectors] = useState<Sector[]>([]);
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   
-  const form = useForm<z.infer<typeof formSchema>>({
+  const isEditing = !!defaultValues;
+
+  const form = useForm<AssetFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "", roomId: "", status: "Em Uso", ...defaultValues },
+    defaultValues: {
+      name: defaultValues?.name || "",
+      roomId: defaultValues?.roomId || "",
+      status: defaultValues?.status || "Em Uso",
+    },
   });
 
   useEffect(() => {
@@ -69,9 +77,12 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
     } else {
       setAvailableSectors([]);
     }
-    form.setValue('roomId', '');
-    setSelectedSector(null);
-  }, [selectedBlock, form, allSectors]);
+    // Only clear dependent fields if not in edit mode or if the block changes
+    if (!isEditing) {
+      form.setValue('roomId', '');
+      setSelectedSector(null);
+    }
+  }, [selectedBlock, form, allSectors, isEditing]);
 
   useEffect(() => {
     if (selectedSector) {
@@ -79,8 +90,10 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
     } else {
       setAvailableRooms([]);
     }
-     form.setValue('roomId', '');
-  }, [selectedSector, form, allRooms]);
+    if (!isEditing) {
+       form.setValue('roomId', '');
+    }
+  }, [selectedSector, form, allRooms, isEditing]);
 
   const handleBlockChange = (blockId: string) => {
     setSelectedBlock(blockId);
@@ -139,7 +152,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
         <div className="space-y-4">
              <FormItem>
               <FormLabel>Bloco</FormLabel>
-              <Select onValueChange={handleBlockChange} value={selectedBlock ?? undefined}>
+              <Select onValueChange={handleBlockChange} value={selectedBlock ?? undefined} disabled={isEditing}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um bloco" />
@@ -157,7 +170,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
 
             <FormItem>
               <FormLabel>Setor</FormLabel>
-              <Select onValueChange={handleSectorChange} value={selectedSector ?? undefined} disabled={!selectedBlock}>
+              <Select onValueChange={handleSectorChange} value={selectedSector ?? undefined} disabled={!selectedBlock || isEditing}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um setor" />
@@ -179,7 +192,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Sala</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value} disabled={!selectedSector}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={!selectedSector || isEditing}>
                     <FormControl>
                     <SelectTrigger>
                         <SelectValue placeholder="Selecione uma sala" />

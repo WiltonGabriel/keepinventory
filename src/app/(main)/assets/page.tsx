@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Asset, Room, Sector, Block, AssetStatus } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
 import { DataTable } from "@/components/data-table";
@@ -12,28 +12,26 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { AssetForm } from "./asset-form";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc, getDocs, query, where, limit } from "firebase/firestore";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function AssetsPage() {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [sectors, setSectors] = useState<Sector[]>([]);
-  const [blocks, setBlocks] = useState<Block[]>([]);
+  const firestore = useFirestore();
+  const assetsCollection = useMemoFirebase(() => collection(firestore, "assets"), [firestore]);
+  const roomsCollection = useMemoFirebase(() => collection(firestore, "rooms"), [firestore]);
+  const sectorsCollection = useMemoFirebase(() => collection(firestore, "sectors"), [firestore]);
+  const blocksCollection = useMemoFirebase(() => collection(firestore, "blocks"), [firestore]);
+
+  const { data: assets, isLoading: isLoadingAssets } = useCollection<Asset>(assetsCollection);
+  const { data: rooms, isLoading: isLoadingRooms } = useCollection<Room>(roomsCollection);
+  const { data: sectors, isLoading: isLoadingSectors } = useCollection<Sector>(sectorsCollection);
+  const { data: blocks, isLoading: isLoadingBlocks } = useCollection<Block>(blocksCollection);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>(undefined);
   const { toast } = useToast();
-
-  const loadData = () => {
-    // TODO: Migrate to Firestore
-    setAssets([]);
-    setRooms([]);
-    setSectors([]);
-    setBlocks([]);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const handleAdd = () => {
     setEditingAsset(undefined);
@@ -46,34 +44,82 @@ export default function AssetsPage() {
   };
 
   const handleDelete = (id: string) => {
-    // TODO: Migrate to Firestore
-    loadData();
+    if (!firestore) return;
+    deleteDocumentNonBlocking(doc(firestore, "assets", id));
     toast({ title: "Patrimônio removido", description: "O item foi removido com sucesso." });
   };
 
-  const handleFormSubmit = (values: Omit<Asset, 'id'>) => {
+  const generateNewAssetId = async (sectorId: string) => {
+    if (!firestore || !sectors) return null;
+
+    const sector = sectors.find(s => s.id === sectorId);
+    if (!sector || sector.abbreviation.length !== 3) {
+      toast({ variant: "destructive", title: "Erro de Setor", description: "O setor selecionado não possui uma sigla válida de 3 letras." });
+      return null;
+    }
+    const prefix = sector.abbreviation.toUpperCase();
+
+    // Query to find the last asset with this prefix
+    const assetsWithPrefixQuery = query(
+      collection(firestore, "assets"),
+      where("id", ">=", prefix),
+      where("id", "<", prefix + 'z'),
+      limit(1000) // Adjust limit as needed, but this is a safeguard
+    );
+
+    const querySnapshot = await getDocs(assetsWithPrefixQuery);
+    let maxNumber = 0;
+    querySnapshot.forEach(doc => {
+      const docId = doc.id;
+      if (docId.startsWith(prefix)) {
+        const numberPart = parseInt(docId.substring(prefix.length), 10);
+        if (!isNaN(numberPart) && numberPart > maxNumber) {
+          maxNumber = numberPart;
+        }
+      }
+    });
+
+    const newNumber = maxNumber + 1;
+    const newId = `${prefix}${newNumber.toString().padStart(3, '0')}`;
+    return newId;
+  }
+
+  const handleFormSubmit = async (values: Omit<Asset, 'id' | 'roomId'> & { roomId: string; status: AssetStatus; }) => {
+    if (!firestore || !sectors) return;
+
     if (editingAsset) {
-      // TODO: Migrate to Firestore
+      updateDocumentNonBlocking(doc(firestore, "assets", editingAsset.id), {
+        ...values
+      });
       toast({ title: "Patrimônio atualizado", description: "As informações do item foram salvas." });
     } else {
-      // TODO: Migrate to Firestore
-      toast({ title: "Patrimônio adicionado", description: "Um novo item foi criado com sucesso." });
+      const newId = await generateNewAssetId(sectors.find(s => s.id === rooms?.find(r => r.id === values.roomId)?.sectorId)?.id || "");
+      if (!newId) {
+        toast({ variant: "destructive", title: "Falha ao gerar ID", description: "Não foi possível gerar um novo ID para o patrimônio." });
+        return;
+      }
+      const newAsset = { id: newId, ...values };
+      // Note: addDocumentNonBlocking doesn't allow specifying an ID. We must use setDoc.
+      // Since we are setting a new document, we don't need to worry about the non-blocking error handling as much for permission errors on create.
+      await addDocumentNonBlocking(collection(firestore, "assets"), { name: values.name, roomId: values.roomId, status: values.status, id: newId });
+
+      toast({ title: "Patrimônio adicionado", description: `Um novo item (${newId}) foi criado com sucesso.` });
     }
-    loadData();
     setIsFormOpen(false);
     setEditingAsset(undefined);
   };
 
   const getFullLocation = (roomId: string) => {
-    const room = rooms.find(r => r.id === roomId);
+    const room = rooms?.find(r => r.id === roomId);
     if (!room) return 'N/A';
-    const sector = sectors.find(s => s.id === room.sectorId);
+    const sector = sectors?.find(s => s.id === room.sectorId);
     if (!sector) return room.name;
-    const block = blocks.find(b => b.id === sector.blockId);
+    const block = blocks?.find(b => b.id === sector.blockId);
     return `${block?.name || 'N/A'} / ${sector.name} / ${room.name}`;
   };
 
   const filteredAssets = useMemo(() => {
+    if (!assets) return [];
     return assets.filter((asset) =>
       asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       asset.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,6 +140,8 @@ export default function AssetsPage() {
         return "outline";
     }
   };
+
+  const isLoading = isLoadingAssets || isLoadingRooms || isLoadingSectors || isLoadingBlocks;
 
   const columns = [
     {
@@ -170,9 +218,9 @@ export default function AssetsPage() {
           <AssetForm
             onSubmit={handleFormSubmit}
             defaultValues={editingAsset}
-            blocks={blocks}
-            allSectors={sectors}
-            allRooms={rooms}
+            blocks={blocks || []}
+            allSectors={sectors || []}
+            allRooms={rooms || []}
           />
         </DialogContent>
       </Dialog>
@@ -180,7 +228,7 @@ export default function AssetsPage() {
       <DataTable
         columns={columns}
         data={filteredAssets}
-        emptyStateMessage="Carregando..."
+        emptyStateMessage={isLoading ? "Carregando..." : "Nenhum patrimônio encontrado."}
       />
     </div>
   );

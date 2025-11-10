@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Sector, Block } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
 import { DataTable } from "@/components/data-table";
@@ -12,24 +12,22 @@ import { HardConfirmationDialog } from "@/components/ui/hard-confirmation-dialog
 import { SectorForm } from "./sector-form";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function SectorsPage() {
-  const [sectors, setSectors] = useState<Sector[]>([]);
-  const [blocks, setBlocks] = useState<Block[]>([]);
+  const firestore = useFirestore();
+  const sectorsCollection = useMemoFirebase(() => collection(firestore, "sectors"), [firestore]);
+  const blocksCollection = useMemoFirebase(() => collection(firestore, "blocks"), [firestore]);
+
+  const { data: sectors, isLoading: isLoadingSectors } = useCollection<Sector>(sectorsCollection);
+  const { data: blocks, isLoading: isLoadingBlocks } = useCollection<Block>(blocksCollection);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSector, setEditingSector] = useState<Sector | undefined>(undefined);
   const { toast } = useToast();
-
-  const loadData = () => {
-    // TODO: Migrate to Firestore
-    setSectors([]);
-    setBlocks([]);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const handleAdd = () => {
     setEditingSector(undefined);
@@ -42,34 +40,38 @@ export default function SectorsPage() {
   };
   
   const handleDelete = (id: string) => {
-    // TODO: Migrate to Firestore
-    loadData();
-    toast({ title: "Setor removido", description: "O setor e seus itens associados foram removidos." });
+    if (!firestore) return;
+    // TODO: Consider cascading deletes for rooms and assets within this sector.
+    deleteDocumentNonBlocking(doc(firestore, "sectors", id));
+    toast({ title: "Setor removido", description: "O setor foi removido com sucesso." });
   };
 
   const handleFormSubmit = (values: Omit<Sector, 'id'>) => {
+    if (!firestore) return;
     if (editingSector) {
-      // TODO: Migrate to Firestore
+      updateDocumentNonBlocking(doc(firestore, "sectors", editingSector.id), values);
       toast({ title: "Setor atualizado", description: "As informações do setor foram salvas." });
     } else {
-      // TODO: Migrate to Firestore
+      addDocumentNonBlocking(collection(firestore, "sectors"), values);
       toast({ title: "Setor adicionado", description: "Um novo setor foi criado com sucesso." });
     }
-    loadData();
     setIsFormOpen(false);
     setEditingSector(undefined);
   };
 
   const getBlockName = (blockId: string) => {
-    return blocks.find(b => b.id === blockId)?.name || 'N/A';
+    return blocks?.find(b => b.id === blockId)?.name || 'N/A';
   }
 
   const filteredSectors = useMemo(() => {
+    if (!sectors) return [];
     return sectors.filter((sector) =>
       sector.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       getBlockName(sector.blockId).toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [sectors, searchQuery, blocks]);
+  
+  const isLoading = isLoadingSectors || isLoadingBlocks;
 
   const columns = [
     {
@@ -138,14 +140,14 @@ export default function SectorsPage() {
           <DialogHeader>
             <DialogTitle>{editingSector ? "Editar Setor" : "Cadastrar Setor"}</DialogTitle>
           </DialogHeader>
-          <SectorForm onSubmit={handleFormSubmit} defaultValues={editingSector} blocks={blocks} />
+          <SectorForm onSubmit={handleFormSubmit} defaultValues={editingSector} blocks={blocks || []} />
         </DialogContent>
       </Dialog>
       
       <DataTable
         columns={columns}
         data={filteredSectors}
-        emptyStateMessage="Carregando..."
+        emptyStateMessage={isLoading ? "Carregando..." : "Nenhum setor encontrado."}
       />
     </div>
   );

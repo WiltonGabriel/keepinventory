@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useCollection, useFirestore } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { Block } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
@@ -22,9 +22,8 @@ import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlo
 
 export default function BlocksPage() {
   const firestore = useFirestore();
-  const { data: blocks, isLoading } = useCollection<Block>(
-    useMemo(() => collection(firestore, "blocks"), [firestore])
-  );
+  const blocksCollection = useMemoFirebase(() => collection(firestore, "blocks"), [firestore]);
+  const { data: blocks, isLoading } = useCollection<Block>(blocksCollection);
   
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);

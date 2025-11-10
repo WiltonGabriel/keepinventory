@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Room, Sector, Block } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
 import { DataTable } from "@/components/data-table";
@@ -11,26 +11,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { RoomForm } from "./room-form";
 import { useToast } from "@/hooks/use-toast";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function RoomsPage() {
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [sectors, setSectors] = useState<Sector[]>([]);
-  const [blocks, setBlocks] = useState<Block[]>([]);
+  const firestore = useFirestore();
+  const roomsCollection = useMemoFirebase(() => collection(firestore, "rooms"), [firestore]);
+  const sectorsCollection = useMemoFirebase(() => collection(firestore, "sectors"), [firestore]);
+  const blocksCollection = useMemoFirebase(() => collection(firestore, "blocks"), [firestore]);
+
+  const { data: rooms, isLoading: isLoadingRooms } = useCollection<Room>(roomsCollection);
+  const { data: sectors, isLoading: isLoadingSectors } = useCollection<Sector>(sectorsCollection);
+  const { data: blocks, isLoading: isLoadingBlocks } = useCollection<Block>(blocksCollection);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | undefined>(undefined);
   const { toast } = useToast();
-
-  const loadData = () => {
-    // TODO: Migrate to Firestore
-    setRooms([]);
-    setSectors([]);
-    setBlocks([]);
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const handleAdd = () => {
     setEditingRoom(undefined);
@@ -43,37 +41,41 @@ export default function RoomsPage() {
   };
   
   const handleDelete = (id: string) => {
-    // TODO: Migrate to Firestore
-    loadData();
+    if (!firestore) return;
+    // TODO: Cascade delete assets in this room.
+    deleteDocumentNonBlocking(doc(firestore, "rooms", id));
     toast({ title: "Sala removida", description: "A sala e seus itens associados foram removidos." });
   };
 
   const handleFormSubmit = (values: Omit<Room, 'id'>) => {
+    if (!firestore) return;
     if (editingRoom) {
-      // TODO: Migrate to Firestore
+      updateDocumentNonBlocking(doc(firestore, "rooms", editingRoom.id), values);
       toast({ title: "Sala atualizada", description: "As informações da sala foram salvas." });
     } else {
-      // TODO: Migrate to Firestore
+      addDocumentNonBlocking(collection(firestore, "rooms"), values);
       toast({ title: "Sala adicionada", description: "Uma nova sala foi criada com sucesso." });
     }
-    loadData();
     setIsFormOpen(false);
     setEditingRoom(undefined);
   };
   
   const getFullLocation = (sectorId: string) => {
-    const sector = sectors.find(s => s.id === sectorId);
+    const sector = sectors?.find(s => s.id === sectorId);
     if (!sector) return 'N/A';
-    const block = blocks.find(b => b.id === sector.blockId);
+    const block = blocks?.find(b => b.id === sector.blockId);
     return `${block?.name || 'N/A'} / ${sector.name}`;
   }
 
   const filteredRooms = useMemo(() => {
+    if (!rooms) return [];
     return rooms.filter((room) =>
       room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       getFullLocation(room.sectorId).toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [rooms, searchQuery, sectors, blocks]);
+
+  const isLoading = isLoadingRooms || isLoadingSectors || isLoadingBlocks;
 
   const columns = [
     {
@@ -130,19 +132,19 @@ export default function RoomsPage() {
         searchPlaceholder="Pesquisar salas..."
       />
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if(!open) setEditingRoom(undefined); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingRoom ? "Editar Sala" : "Cadastrar Sala"}</DialogTitle>
           </DialogHeader>
-          <RoomForm onSubmit={handleFormSubmit} defaultValues={editingRoom} sectors={sectors} />
+          <RoomForm onSubmit={handleFormSubmit} defaultValues={editingRoom} sectors={sectors || []} />
         </DialogContent>
       </Dialog>
       
       <DataTable
         columns={columns}
         data={filteredRooms}
-        emptyStateMessage="Carregando..."
+        emptyStateMessage={isLoading ? "Carregando..." : "Nenhuma sala encontrada."}
       />
     </div>
   );
