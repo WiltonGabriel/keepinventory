@@ -26,10 +26,10 @@ export default function DashboardPage() {
     const firestore = useFirestore();
     const { user } = useUser();
 
-    const assetsCollection = useMemoFirebase(() => collection(firestore, 'assets'), [firestore]);
-    const roomsCollection = useMemoFirebase(() => collection(firestore, 'rooms'), [firestore]);
-    const sectorsCollection = useMemoFirebase(() => collection(firestore, 'sectors'), [firestore]);
-    const blocksCollection = useMemoFirebase(() => collection(firestore, 'blocks'), [firestore]);
+    const assetsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'assets') : null, [firestore]);
+    const roomsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'rooms') : null, [firestore]);
+    const sectorsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'sectors') : null, [firestore]);
+    const blocksCollection = useMemoFirebase(() => firestore ? collection(firestore, 'blocks') : null, [firestore]);
 
     const { data: assets } = useCollection<Asset>(assetsCollection);
     const { data: rooms } = useCollection<Room>(roomsCollection);
@@ -59,7 +59,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-3xl font-bold tracking-tight">
-        {user ? `Olá, ${user.displayName}!` : "Tela inicial"}
+        {user ? `Olá, ${user.displayName || user.email}!` : "Tela inicial"}
       </h1>
 
       <Tabs defaultValue="overview" className="space-y-4">
