@@ -42,12 +42,12 @@ function LoginPageContent() {
       await signInWithEmailAndPassword(auth, email, password);
       router.replace("/dashboard");
     } catch (e: any) {
-      if (e.code === 'auth/user-not-found') {
+      if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
         try {
           await createUserWithEmailAndPassword(auth, email, password);
           router.replace("/dashboard");
-        } catch (e: any) {
-          setError(e.message);
+        } catch (creationError: any) {
+          setError(creationError.message);
         }
       } else {
         setError(e.message);
