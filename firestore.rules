@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Firestore Security Rules for the inventory system.
  *
@@ -28,11 +29,7 @@ service cloud.firestore {
      * @principle Allows any authenticated user to read and write block data.
      */
     match /blocks/{blockId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     /**
@@ -47,11 +44,7 @@ service cloud.firestore {
      * @principle Allows any authenticated user to read and write sector data.
      */
     match /sectors/{sectorId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     /**
@@ -66,11 +59,7 @@ service cloud.firestore {
      * @principle Allows any authenticated user to read and write room data.
      */
     match /rooms/{roomId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     /**
@@ -85,25 +74,20 @@ service cloud.firestore {
      * @principle Allows any authenticated user to read and write asset data.
      */
     match /assets/{assetId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
     
     /**
      * @description Grants read and write access to any authenticated user for movements.
      * @path /movements/{movementId}
      * @allow (create) - Any authenticated user can create a movement log.
-     * @allow (list) - Any authenticated user can read movement logs.
+     * @allow (list, get) - Any authenticated user can read movement logs.
      * @deny (update, delete) - No one can modify or delete logs.
      * @principle Allows creation and reading of movement logs for auditing, but makes them immutable.
      */
     match /movements/{movementId} {
         allow create: if isSignedIn();
-        allow list: if isSignedIn();
-        allow get: if isSignedIn();
+        allow read: if isSignedIn();
         allow update: if false;
         allow delete: if false;
     }
