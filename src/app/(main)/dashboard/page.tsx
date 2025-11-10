@@ -6,14 +6,12 @@ import {
   Sector,
   Room,
   Asset,
-  Movement,
 } from '@/lib/types';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import {
   Accordion,
@@ -30,7 +28,6 @@ import {
   BarChart3,
   CheckCircle,
   AlertTriangle,
-  History,
 } from 'lucide-react';
 import {
   useUser,
@@ -38,10 +35,7 @@ import {
   useFirestore,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, collectionGroup, query, orderBy, limit } from 'firebase/firestore';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { Badge } from '@/components/ui/badge';
+import { collection } from 'firebase/firestore';
 
 type Stats = {
   assetCount: number;
@@ -73,24 +67,10 @@ export default function DashboardPage() {
     [firestore]
   );
   
-  // Real-time query for recent movements across all assets
-  const movementsQuery = useMemoFirebase(
-    () =>
-      firestore
-        ? query(
-            collectionGroup(firestore, 'movements'),
-            orderBy('timestamp', 'desc'),
-            limit(10)
-          )
-        : null,
-    [firestore]
-  );
-
   const { data: assets } = useCollection<Asset>(assetsCollection);
   const { data: rooms } = useCollection<Room>(roomsCollection);
   const { data: sectors } = useCollection<Sector>(sectorsCollection);
   const { data: blocks } = useCollection<Block>(blocksCollection);
-  const { data: recentMovements, isLoading: isLoadingMovements } = useCollection<Movement>(movementsQuery);
 
   const stats: Stats = useMemo(() => {
     const assetCount = assets?.length || 0;
@@ -120,25 +100,6 @@ export default function DashboardPage() {
   const getAssetsForRoom = (roomId: string) => {
     return assets?.filter((a) => a.roomId === roomId) || [];
   };
-
-  const renderMovementLog = (movement: Movement) => {
-    const assetName = movement.assetName || 'Item desconhecido';
-    const assetId = movement.assetId || 'ID desconhecido';
-
-    switch (movement.action) {
-        case "Criado":
-            return <>O item <Badge variant="secondary">{assetId}</Badge> (<span className="font-semibold">{assetName}</span>) foi <span className="text-green-600 font-semibold">criado</span>.</>;
-        case "Status Alterado":
-            return <>O status do item <Badge variant="secondary">{assetId}</Badge> (<span className="font-semibold">{assetName}</span>) foi alterado para <Badge variant="outline">{movement.to}</Badge>.</>;
-        case "Movido":
-            return <>O item <Badge variant="secondary">{assetId}</Badge> (<span className="font-semibold">{assetName}</span>) foi movido de <Badge variant="outline">{movement.from}</Badge> para <Badge variant="outline">{movement.to}</Badge>.</>;
-        case "Nome Alterado":
-            return <>O nome do item <Badge variant="secondary">{assetId}</Badge> foi alterado de <span className="font-semibold">{movement.from}</span> para <span className="font-semibold">{movement.to}</span>.</>;
-        default:
-            return "Ação desconhecida.";
-    }
-  };
-
 
   return (
     <div className="flex flex-col gap-8">
@@ -213,31 +174,6 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-          <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <History className="h-5 w-5" />
-                    Log de Atividade Recente
-                </CardTitle>
-                <CardDescription>As últimas 10 movimentações registradas no sistema.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    {isLoadingMovements && <p className="text-muted-foreground">Carregando atividades...</p>}
-                    {!isLoadingMovements && recentMovements?.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-4">Nenhuma atividade recente encontrada.</p>
-                    )}
-                    {recentMovements && recentMovements.map((movement) => (
-                        <div key={movement.id} className="flex flex-col sm:flex-row sm:items-center sm:gap-4 text-sm">
-                           <span className="font-mono text-xs text-muted-foreground w-full sm:w-auto mb-1 sm:mb-0">
-                                {movement.timestamp ? format(movement.timestamp.toDate(), "dd/MM/yyyy, HH:mm:ss", { locale: ptBR }) : 'Data inválida'}
-                           </span>
-                           <span className="flex-1">{renderMovementLog(movement)}</span>
-                        </div>
-                    ))}
-                </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="hierarchy">

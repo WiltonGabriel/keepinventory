@@ -5,7 +5,6 @@
  * This ruleset allows read and write access to any authenticated user for the main data collections.
  * The 'movements' log is a subcollection of each 'asset'. This simplifies security,
  * as access to an asset's history is controlled by the rules for that asset.
- * A specific rule is added to allow collection group queries on 'movements' for the dashboard feed.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -48,16 +47,6 @@ service cloud.firestore {
         allow create, delete: if isSignedIn();
         allow update: if false; // Deny updates to make logs immutable.
       }
-    }
-
-    /**
-     * @description This rule allows a collection group query on 'movements'.
-     * It's necessary for features like the "Recent Activity" feed on the dashboard,
-     * which needs to query across all 'movements' subcollections.
-     * It grants read-only access to any authenticated user.
-     */
-    match /{path=**}/movements/{movementId} {
-      allow read: if isSignedIn();
     }
 
     function isSignedIn() {
