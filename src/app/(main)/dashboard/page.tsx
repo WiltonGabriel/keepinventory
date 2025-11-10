@@ -6,10 +6,12 @@ import {
   Sector,
   Room,
   Asset,
+  Movement,
 } from '@/lib/types';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -28,6 +30,10 @@ import {
   BarChart3,
   CheckCircle,
   AlertTriangle,
+  ArrowRight,
+  Edit3,
+  PlusCircle,
+  Clock,
 } from 'lucide-react';
 import {
   useUser,
@@ -35,7 +41,11 @@ import {
   useFirestore,
   useMemoFirebase,
 } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, collectionGroup, query, orderBy, limit } from 'firebase/firestore';
+import { format } from "date-fns";
+import { ptBR } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type Stats = {
   assetCount: number;
@@ -45,6 +55,98 @@ type Stats = {
   activeAssetCount: number;
   lostAssetCount: number;
 };
+
+function RecentActivityLog() {
+  const firestore = useFirestore();
+
+  const movementsQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? query(
+            collectionGroup(firestore, "movements"),
+            orderBy("timestamp", "desc"),
+            limit(10)
+          )
+        : null,
+    [firestore]
+  );
+  
+  const { data: recentMovements, isLoading } = useCollection<Movement>(movementsQuery);
+
+  const getActionIcon = (action: Movement["action"]) => {
+    switch(action) {
+      case 'Criado':
+        return <PlusCircle className="h-4 w-4 text-green-500" />;
+      case 'Status Alterado':
+        return <Edit3 className="h-4 w-4 text-blue-500" />;
+      case 'Movido':
+        return <ArrowRight className="h-4 w-4 text-orange-500" />;
+      case 'Nome Alterado':
+        return <Edit3 className="h-4 w-4 text-purple-500" />;
+      default:
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
+    }
+  }
+
+  const renderMovementDetails = (movement: Movement) => {
+    switch (movement.action) {
+      case "Criado":
+        return `Patrimônio "${movement.assetName}" (${movement.assetId}) foi criado.`;
+      case "Status Alterado":
+        return (
+          <>
+            Status de <span className="font-semibold">{movement.assetName}</span> alterado para <Badge variant="outline">{movement.to}</Badge>.
+          </>
+        );
+      case "Movido":
+        return (
+          <>
+            <span className="font-semibold">{movement.assetName}</span> movido para <Badge variant="secondary">{movement.to}</Badge>.
+          </>
+        );
+      case "Nome Alterado":
+        return (
+            <>
+                Nome de <span className="font-semibold">{movement.from}</span> alterado para <span className="font-semibold">{movement.to}</span>.
+            </>
+        );
+      default:
+        return "Ação desconhecida.";
+    }
+  };
+
+  return (
+    <Card className="col-span-1 lg:col-span-2">
+      <CardHeader>
+        <CardTitle>Log de Atividade Recente</CardTitle>
+        <CardDescription>As 10 últimas movimentações no inventário.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-72 w-full">
+          {isLoading && <p className="text-muted-foreground p-4">Carregando atividades...</p>}
+          {!isLoading && recentMovements?.length === 0 && (
+              <p className="text-muted-foreground p-4">Nenhuma atividade recente encontrada.</p>
+          )}
+          {recentMovements && recentMovements.length > 0 && (
+              <ul className="space-y-4 p-4">
+                  {recentMovements.map((movement) => (
+                      <li key={movement.id} className="flex items-start gap-4">
+                          <div className="flex-shrink-0 pt-1">{getActionIcon(movement.action)}</div>
+                          <div className="flex-grow">
+                              <div className="text-sm">{renderMovementDetails(movement)}</div>
+                              <p className="text-xs text-muted-foreground">
+                                  {movement.timestamp ? format(movement.timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR }) : 'Data desconhecida'}
+                              </p>
+                          </div>
+                      </li>
+                  ))}
+              </ul>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -174,6 +276,20 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+             <RecentActivityLog />
+             <Card className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm min-h-[300px]">
+              <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
+                <BarChart3 className="h-16 w-16 text-muted-foreground" />
+                <h3 className="text-2xl font-bold tracking-tight">
+                  Gráficos em Breve
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Esta área exibirá gráficos e visualizações sobre o inventário.
+                </p>
+              </CardContent>
+            </Card>
+           </div>
         </TabsContent>
 
         <TabsContent value="hierarchy">

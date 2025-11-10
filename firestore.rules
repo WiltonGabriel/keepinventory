@@ -49,6 +49,14 @@ service cloud.firestore {
       }
     }
 
+    /**
+     * @description Allows a collection group query on 'movements' for the dashboard.
+     * It grants read-only access to any authenticated user for the 'movements' collection group.
+     */
+    match /{path=**}/movements/{movementId} {
+      allow read: if isSignedIn();
+    }
+
     function isSignedIn() {
       return request.auth != null;
     }
