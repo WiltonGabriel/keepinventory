@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Building, Terminal } from "lucide-react";
+import { Terminal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
@@ -56,13 +56,10 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-primary">
+    <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-sm relative">
-        <CardHeader className="text-center">
-          <div className="flex justify-center items-center mb-4">
-             <Building className="h-8 w-8 text-primary" />
-          </div>
-          <CardTitle className="text-4xl font-bold text-primary">UNIVAG</CardTitle>
+        <CardHeader className="text-center space-y-4">
+          <CardTitle className="text-5xl font-black text-secondary tracking-tight">UNIVAG</CardTitle>
           <CardDescription>
             Sistema de Gestão Patrimonial (SGP)
           </CardDescription>
