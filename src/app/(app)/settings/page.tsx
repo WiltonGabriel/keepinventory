@@ -24,13 +24,7 @@ export default function SettingsPage() {
 
   const handleColorChange = (color: string) => {
     const root = document.documentElement;
-    const [h, s] = color.split(' ').map(parseFloat);
-
-    const lightColor = color;
-    const darkColor = `${h} ${s}% 70%`;
-
-    root.style.setProperty('--primary-light', lightColor);
-    root.style.setProperty('--primary-dark', darkColor);
+    root.style.setProperty('--primary', color);
     setActiveColor(color);
   };
   

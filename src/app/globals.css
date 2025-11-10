@@ -15,18 +15,15 @@
     --popover: 0 0% 100%; /* #FFFFFF */
     --popover-foreground: 0 0% 20%; /* #333333 */
     
-    /* Primary Colors (definable by user) */
-    --primary-light: 206 100% 24%; /* Default light theme primary */
-    --primary-dark: 206 100% 70%; /* Default dark theme primary */
-    
-    --primary: var(--primary-light);
+    /* Primary Color (definable by user) */
+    --primary: 206 100% 24%;
     --primary-foreground: 0 0% 98%;
     
     /* Secundária e Accent serão derivadas da cor primária para maior coesão */
-    --secondary: hsl(var(--primary));
-    --secondary-foreground: hsl(var(--primary-foreground));
-    --accent: hsl(var(--primary));
-    --accent-foreground: hsl(var(--primary-foreground));
+    --secondary: hsl(var(--primary) / 0.1);
+    --secondary-foreground: hsl(var(--primary));
+    --accent: hsl(var(--primary) / 0.1);
+    --accent-foreground: hsl(var(--primary));
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
@@ -38,7 +35,7 @@
     --neutral-foreground: 0 0% 98%;
     --border: 210 17% 90%; /* #dee2e6 */
     --input: 210 17% 90%;
-    --ring: var(--primary);
+    --ring: hsl(var(--primary));
     --radius: 0.5rem;
   }
 
@@ -50,15 +47,15 @@
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 88%;
 
-    /* Cor primária no modo escuro */
-    --primary: var(--primary-dark);
+    /* Cor primária no modo escuro (versão mais clara) */
+    --primary: 206 90% 60%;
     --primary-foreground: 206 100% 10%;
 
     /* Secundária e Accent derivadas da cor primária no modo escuro */
-    --secondary: hsl(var(--primary));
-    --secondary-foreground: hsl(var(--primary-foreground));
-    --accent: hsl(var(--primary));
-    --accent-foreground: hsl(var(--primary-foreground));
+    --secondary: hsl(var(--primary) / 0.1);
+    --secondary-foreground: hsl(var(--primary));
+    --accent: hsl(var(--primary) / 0.1);
+    --accent-foreground: hsl(var(--primary));
 
     --muted: 220 10% 15%;
     --muted-foreground: 220 10% 45%;
@@ -70,7 +67,7 @@
     --neutral-foreground: 0 0% 98%;
     --border: 0 0% 27%; /* #444444 */
     --input: 0 0% 27%;
-    --ring: var(--primary);
+    --ring: hsl(var(--primary));
   }
 }
 
