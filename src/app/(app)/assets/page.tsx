@@ -128,38 +128,12 @@ export default function AssetsPage() {
     }
     const sectorPrefix = sector.abbreviation.toUpperCase();
 
-    // 2. Obter o ano atual
-    const currentYear = new Date().getFullYear().toString().slice(-2); // "25" para 2025
+    // 2. Gerar uma string alfanumérica aleatória
+    // Isso cria uma string aleatória com 8 caracteres (letras minúsculas e números)
+    const randomPart = Math.random().toString(36).substring(2, 10);
 
-    // 3. Montar o prefixo de busca (PRE+ANO)
-    const searchPrefix = `${sectorPrefix}${currentYear}`; // Ex: "TIN25"
-
-    // 4. Consultar o Firestore pelo maior ID existente com esse prefixo
-    const assetsWithPrefixQuery = query(
-      collection(firestore, 'patrimonios'),
-      where('id', '>=', searchPrefix),
-      where('id', '<', searchPrefix + 'z') // 'z' é maior que qualquer número
-    );
-
-    const querySnapshot = await getDocs(assetsWithPrefixQuery);
-    let maxSequential = 0;
-    querySnapshot.forEach((doc) => {
-      const docId = doc.id;
-      if (docId.startsWith(searchPrefix)) {
-        // Extrai a parte sequencial (os últimos 4 dígitos)
-        const sequentialPart = parseInt(docId.substring(searchPrefix.length), 10);
-        if (!isNaN(sequentialPart) && sequentialPart > maxSequential) {
-          maxSequential = sequentialPart;
-        }
-      }
-    });
-
-    // 5. Calcular e formatar o novo sequencial
-    const newSequential = maxSequential + 1;
-    const formattedSequential = newSequential.toString().padStart(4, '0'); // Garante 4 dígitos, ex: "0001"
-
-    // 6. Gerar o novo ID completo
-    const newId = `${searchPrefix}${formattedSequential}`;
+    // 3. Gerar o novo ID completo
+    const newId = `${sectorPrefix}_${randomPart}`;
     return newId;
 };
 
@@ -463,5 +437,3 @@ export default function AssetsPage() {
     </div>
   );
 }
-
-    
