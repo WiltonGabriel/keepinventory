@@ -102,7 +102,7 @@ export function HistoryLog({ asset, open, onOpenChange }: HistoryLogProps) {
                             <li key={movement.id} className="flex items-start gap-4">
                                 <div className="flex-shrink-0 pt-1">{getActionIcon(movement.action)}</div>
                                 <div className="flex-grow">
-                                    <p className="text-sm">{renderMovementDetails(movement)}</p>
+                                    <div className="text-sm">{renderMovementDetails(movement)}</div>
                                     <p className="text-xs text-muted-foreground">
                                         {movement.timestamp ? format(movement.timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'Data desconhecida'}
                                     </p>
