@@ -53,14 +53,15 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
       sectorId: "",
       roomId: "",
     },
-    // A validação eager (agressiva) é desativada, ocorrendo apenas no submit.
+    // BUG 1 FIX: A validação só ocorrerá no submit, não ao carregar.
     mode: 'onSubmit', 
     reValidateMode: 'onChange',
   });
 
+  // BUG 2 FIX: Este useEffect agora lida de forma robusta com o preenchimento do formulário no modo "Editar".
   useEffect(() => {
-    // Este efeito é a lógica central para preencher o formulário no modo "Editar".
-    // Ele só é executado se houver um patrimônio para editar e se todos os dados de localização estiverem carregados.
+    // A lógica só é executada se houver um patrimônio para editar (defaultValues.id existe)
+    // e se todos os dados de localização estiverem carregados e disponíveis.
     if (defaultValues?.id && allRooms.length > 0 && allSectors.length > 0 && blocks.length > 0) {
       
       const room = allRooms.find(r => r.id === defaultValues.roomId);
@@ -78,7 +79,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
         }
       }
     }
-  // O array de dependências garante que este efeito seja reavaliado se qualquer um dos dados necessários mudar.
+  // O array de dependências garante que o efeito seja reavaliado se qualquer um dos dados necessários mudar.
   }, [defaultValues, allRooms, allSectors, blocks, form]);
   
   const watchedBlockId = form.watch("blockId");
