@@ -86,10 +86,8 @@ service cloud.firestore {
      * @principle Allows creation and reading of movement logs for auditing, but makes them immutable.
      */
     match /movements/{movementId} {
-        allow create: if isSignedIn();
-        allow read: if isSignedIn();
-        allow update: if false;
-        allow delete: if false;
+        allow create, read: if isSignedIn();
+        allow update, delete: if false;
     }
 
     function isSignedIn() {
