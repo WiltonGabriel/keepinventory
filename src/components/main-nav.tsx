@@ -12,11 +12,11 @@ import {
   LayoutDashboard,
   Archive,
   DoorOpen,
-  Building2,
   Building,
   BarChart3,
   Settings,
   ArrowRightLeft,
+  Building2, // Importado para ser usado em Configurações
 } from "lucide-react";
 
 const navItems = [
@@ -24,7 +24,6 @@ const navItems = [
   { href: "/assets", label: "Patrimônios", icon: Archive },
   { href: "/move-assets", label: "Movimentação", icon: ArrowRightLeft },
   { href: "/rooms", label: "Salas", icon: DoorOpen },
-  { href: "/sectors", label: "Setores", icon: Building2 },
   { href: "/blocks", label: "Blocos", icon: Building },
   { href: "/reports", label: "Relatórios", icon: BarChart3 },
   { href: "/settings", label: "Configurações", icon: Settings },
@@ -32,6 +31,9 @@ const navItems = [
 
 export function MainNav() {
   const pathname = usePathname();
+
+  // O item de menu "Setores" foi removido e sua funcionalidade incorporada em "Configurações"
+  const settingsHref = "/settings";
 
   return (
     <SidebarMenu>
