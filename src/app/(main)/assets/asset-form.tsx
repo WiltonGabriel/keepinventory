@@ -45,7 +45,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
   const [availableSectors, setAvailableSectors] = useState<Sector[]>([]);
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   
-  const isEditing = !!defaultValues;
+  const isEditing = !!defaultValues?.id;
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(formSchema),
@@ -65,7 +65,6 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
         if (sector) {
           setSelectedBlock(sector.blockId);
           setSelectedSector(sector.id);
-          // Set the form value for the room, which is the only one controlled by react-hook-form
           form.setValue('roomId', room.id);
         }
       }
@@ -76,38 +75,35 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
   useEffect(() => {
     if (selectedBlock) {
       setAvailableSectors(allSectors.filter(s => s.blockId === selectedBlock));
+      if (!isEditing) {
+        setSelectedSector(null);
+        form.setValue('roomId', '');
+      }
     } else {
       setAvailableSectors([]);
     }
-    // Don't reset dependent fields if we are in editing mode
-    if (!isEditing) {
-        setSelectedSector(null);
-        form.setValue('roomId', '');
-    }
   }, [selectedBlock, allSectors, form, isEditing]);
-
+  
   // Effect to update available rooms when sector changes
   useEffect(() => {
     if (selectedSector) {
       setAvailableRooms(allRooms.filter(r => r.sectorId === selectedSector));
+       if (!isEditing) {
+         form.setValue('roomId', '');
+       }
     } else {
       setAvailableRooms([]);
-    }
-    if (!isEditing) {
-       form.setValue('roomId', '');
     }
   }, [selectedSector, allRooms, form, isEditing]);
 
 
   const handleBlockChange = (blockId: string) => {
-    if (isEditing) return;
     setSelectedBlock(blockId);
     setSelectedSector(null);
     form.setValue('roomId', '');
   }
 
   const handleSectorChange = (sectorId: string) => {
-    if (isEditing) return;
     setSelectedSector(sectorId);
     form.setValue('roomId', '');
   }
@@ -160,7 +156,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
               <Select onValueChange={handleBlockChange} value={selectedBlock ?? undefined} disabled={isEditing}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={isEditing ? 'Carregando...' : 'Selecione um bloco'} />
+                    <SelectValue placeholder={isEditing && selectedBlock ? blocks.find(b=>b.id === selectedBlock)?.name : 'Selecione um bloco'} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -178,7 +174,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
               <Select onValueChange={handleSectorChange} value={selectedSector ?? undefined} disabled={!selectedBlock || isEditing}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder={isEditing ? 'Carregando...' : 'Selecione um setor'} />
+                    <SelectValue placeholder={isEditing && selectedSector ? allSectors.find(s=>s.id === selectedSector)?.name : 'Selecione um setor'} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -200,7 +196,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
                 <Select onValueChange={field.onChange} value={field.value} disabled={!selectedSector || isEditing}>
                     <FormControl>
                     <SelectTrigger>
-                        <SelectValue placeholder={isEditing ? 'Carregando...' : 'Selecione uma sala'} />
+                        <SelectValue placeholder={isEditing && field.value ? allRooms.find(r=>r.id === field.value)?.name : 'Selecione uma sala'} />
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>

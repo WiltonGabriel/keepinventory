@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc, getDocs, query, where, limit, setDoc } from "firebase/firestore";
-import { deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function AssetsPage() {
   const firestore = useFirestore();
@@ -108,6 +108,7 @@ export default function AssetsPage() {
       
       const newAsset: Asset = { id: newId, name: values.name, roomId: values.roomId, status: values.status };
       
+      // Use setDoc with the new ID
       await setDoc(doc(firestore, "assets", newId), {
           name: newAsset.name,
           roomId: newAsset.roomId,
