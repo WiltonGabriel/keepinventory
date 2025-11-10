@@ -53,16 +53,20 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
       sectorId: "",
       roomId: "",
     },
+    // A validação eager (agressiva) é desativada, ocorrendo apenas no submit.
+    mode: 'onSubmit', 
+    reValidateMode: 'onChange',
   });
 
   useEffect(() => {
-    // This effect runs ONLY in EDIT mode and only when ALL data is available.
+    // Este efeito é a lógica central para preencher o formulário no modo "Editar".
+    // Ele só é executado se houver um patrimônio para editar e se todos os dados de localização estiverem carregados.
     if (defaultValues?.id && allRooms.length > 0 && allSectors.length > 0 && blocks.length > 0) {
       
       const room = allRooms.find(r => r.id === defaultValues.roomId);
       if (room) {
         const sector = allSectors.find(s => s.id === room.sectorId);
-        // Only if the full hierarchy (room and sector) is found, the form is reset.
+        // Apenas se a hierarquia completa (sala e setor) for encontrada, o formulário é preenchido.
         if (sector) {
           form.reset({
             name: defaultValues.name || "",
@@ -74,22 +78,25 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
         }
       }
     }
-  // The dependency array ensures this effect is re-evaluated if any of the data changes.
+  // O array de dependências garante que este efeito seja reavaliado se qualquer um dos dados necessários mudar.
   }, [defaultValues, allRooms, allSectors, blocks, form]);
   
   const watchedBlockId = form.watch("blockId");
   const watchedSectorId = form.watch("sectorId");
 
+  // Filtra os setores disponíveis com base no bloco selecionado.
   const availableSectors = useMemo(() => {
     if (!watchedBlockId) return [];
     return allSectors.filter(s => s.blockId === watchedBlockId);
   }, [watchedBlockId, allSectors]);
 
+  // Filtra as salas disponíveis com base no setor selecionado.
   const availableRooms = useMemo(() => {
     if (!watchedSectorId) return [];
     return allRooms.filter(r => r.sectorId === watchedSectorId);
   }, [watchedSectorId, allRooms]);
 
+  // Prepara os dados para o envio, removendo os IDs de controle de bloco e setor.
   const handleFormSubmit = (values: AssetFormValues) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { blockId, sectorId, ...submissionValues } = values;
@@ -147,7 +154,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
                     <FormLabel>Bloco</FormLabel>
                     <Select onValueChange={(value) => {
                         field.onChange(value);
-                        // When block changes, reset sector and room.
+                        // Ao mudar o bloco, reseta o setor e a sala para forçar uma nova seleção.
                         form.setValue('sectorId', '', { shouldValidate: true });
                         form.setValue('roomId', '', { shouldValidate: true });
                     }} value={field.value}>
@@ -177,7 +184,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
                     <FormLabel>Setor</FormLabel>
                     <Select onValueChange={(value) => {
                         field.onChange(value);
-                        // When sector changes, reset room.
+                        // Ao mudar o setor, reseta a sala.
                         form.setValue('roomId', '', { shouldValidate: true });
                     }} value={field.value} disabled={!watchedBlockId || availableSectors.length === 0}>
                         <FormControl>
