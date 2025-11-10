@@ -34,7 +34,6 @@ import {
   History,
 } from 'lucide-react';
 import {
-  useUser,
   useCollection,
   useFirestore,
   useMemoFirebase,
@@ -54,7 +53,6 @@ type Stats = {
 
 export default function DashboardPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
 
   const assetsCollection = useMemoFirebase(
     () => (firestore ? collection(firestore, 'patrimonios') : null),
@@ -124,9 +122,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-3xl font-bold tracking-tight">
-        {user
-          ? `Olá, ${user.displayName || user.email?.split('@')[0]}!`
-          : 'Tela inicial'}
+        Tela inicial
       </h1>
 
       <Tabs defaultValue="overview" className="space-y-4">

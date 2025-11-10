@@ -4,37 +4,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function to check for authenticated users
-    function isSignedIn() {
-      return request.auth != null;
-    }
+    // ATENÇÃO: As regras foram abertas para permitir o desenvolvimento.
+    // A autenticação será reimplementada.
 
-    match /blocos/{blocoId} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /setores/{setorId} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /salas/{salaId} {
-      allow read, write: if isSignedIn();
-    }
-
-    match /patrimonios/{patrimonioId} {
-      allow read, write: if isSignedIn();
-
-      // Rule for individual history (sub-collection)
-      match /log_especifico/{logId} {
-        allow read, create: if isSignedIn();
-        allow update, delete: if false; // Immutable
-      }
-    }
-
-    // Rule for the general dashboard log (main collection)
-    match /log_geral/{logId} {
-      allow list, create: if isSignedIn();
-      allow get, update, delete: if false;
+    match /{path=**} {
+      allow read, write: if true;
     }
   }
 }
