@@ -7,7 +7,7 @@ import {
   Sector,
   Room,
   Asset,
-  Movement,
+  LogGeral,
 } from '@/lib/types';
 import {
   Card,
@@ -32,9 +32,6 @@ import {
   CheckCircle,
   AlertTriangle,
   History,
-  PlusCircle,
-  Edit3,
-  ArrowRight,
 } from 'lucide-react';
 import {
   useUser,
@@ -45,9 +42,6 @@ import {
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
-
 
 type Stats = {
   assetCount: number;
@@ -78,12 +72,13 @@ export default function DashboardPage() {
     () => (firestore ? collection(firestore, 'blocos') : null),
     [firestore]
   );
-
-  const movementsQuery = useMemoFirebase(
+  
+  // Consulta a nova coleção principal 'log_geral'
+  const generalLogQuery = useMemoFirebase(
     () =>
       firestore
         ? query(
-            collection(firestore, 'movimentacoes'),
+            collection(firestore, 'log_geral'),
             orderBy('timestamp', 'desc'),
             limit(10)
           )
@@ -95,7 +90,7 @@ export default function DashboardPage() {
   const { data: rooms } = useCollection<Room>(roomsCollection);
   const { data: sectors } = useCollection<Sector>(sectorsCollection);
   const { data: blocks } = useCollection<Block>(blocksCollection);
-  const { data: recentMovements, isLoading: isLoadingMovements } = useCollection<Movement>(movementsQuery);
+  const { data: recentLogs, isLoading: isLoadingLogs } = useCollection<LogGeral>(generalLogQuery);
 
   const stats: Stats = useMemo(() => {
     const assetCount = assets?.length || 0;
@@ -125,43 +120,6 @@ export default function DashboardPage() {
   const getAssetsForRoom = (roomId: string) => {
     return assets?.filter((a) => a.roomId === roomId) || [];
   };
-
-  const getActionIcon = (action: Movement["action"]) => {
-    switch(action) {
-      case 'Criado':
-        return <PlusCircle className="h-4 w-4 text-green-500" />;
-      case 'Status Alterado':
-        return <Edit3 className="h-4 w-4 text-blue-500" />;
-      case 'Movido':
-        return <ArrowRight className="h-4 w-4 text-orange-500" />;
-      case 'Nome Alterado':
-        return <Edit3 className="h-4 w-4 text-purple-500" />;
-      default:
-        return <History className="h-4 w-4" />;
-    }
-  }
-
-  const renderMovementDetails = (movement: Movement) => {
-    const assetLink = (
-      <Link href="/assets" className="font-bold text-primary hover:underline">
-        {movement.assetName}
-      </Link>
-    );
-
-    switch (movement.action) {
-      case "Criado":
-        return <>O item {assetLink} foi criado com o nome "{movement.to}".</>;
-      case "Status Alterado":
-        return <>O status de {assetLink} foi alterado de <Badge variant="outline">{movement.from}</Badge> para <Badge variant="outline">{movement.to}</Badge>.</>;
-      case "Movido":
-        return <>{assetLink} foi movido de <Badge variant="secondary">{movement.from}</Badge> para <Badge variant="secondary">{movement.to}</Badge>.</>;
-      case "Nome Alterado":
-        return <>O nome de {assetLink} foi alterado de "{movement.from}" para "{movement.to}".</>;
-      default:
-        return "Ação desconhecida.";
-    }
-  };
-
 
   return (
     <div className="flex flex-col gap-8">
@@ -240,22 +198,22 @@ export default function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Log de Atividade Recente</CardTitle>
-                <CardDescription>As 10 últimas movimentações no inventário.</CardDescription>
+                <CardDescription>As 10 últimas ações de criação ou remoção no inventário.</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoadingMovements && <p className="text-sm text-muted-foreground">Carregando atividades...</p>}
-                {!isLoadingMovements && recentMovements?.length === 0 && (
+                {isLoadingLogs && <p className="text-sm text-muted-foreground">Carregando atividades...</p>}
+                {!isLoadingLogs && recentLogs?.length === 0 && (
                   <p className="text-sm text-muted-foreground">Nenhuma atividade recente encontrada.</p>
                 )}
-                {recentMovements && recentMovements.length > 0 && (
+                {recentLogs && recentLogs.length > 0 && (
                   <ul className="space-y-4">
-                    {recentMovements.map((movement) => (
-                      <li key={movement.id} className="flex items-start gap-3">
-                        <div className="flex-shrink-0 pt-1">{getActionIcon(movement.action)}</div>
+                    {recentLogs.map((log) => (
+                      <li key={log.id} className="flex items-start gap-3">
+                        <div className="flex-shrink-0 pt-1"><History className="h-4 w-4" /></div>
                         <div className="flex-grow">
-                          <div className="text-sm">{renderMovementDetails(movement)}</div>
+                          <div className="text-sm">{log.acao}</div>
                           <p className="text-xs text-muted-foreground">
-                            {movement.timestamp ? format(movement.timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR }) : 'Data desconhecida'}
+                            {log.timestamp ? format(log.timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR }) : 'Data desconhecida'}
                           </p>
                         </div>
                       </li>

@@ -29,15 +29,23 @@ export interface Asset {
   status: AssetStatus;
 }
 
-export interface Movement {
+// Log para o histórico detalhado de um item específico (sub-coleção)
+export interface LogEspecifico {
     id: string;
-    assetId: string;
-    assetName: string;
     timestamp: any; // Firestore Timestamp
     action: "Criado" | "Status Alterado" | "Movido" | "Nome Alterado";
     from: string;
     to: string;
+    assetNameSnapshot: string; // Nome do patrimônio no momento do log
 }
+
+// Log para o feed de atividade global no dashboard (coleção principal)
+export interface LogGeral {
+    id: string;
+    timestamp: any; // Firestore Timestamp
+    acao: string; // Ex: "Patrimônio TIN001 criado."
+}
+
 
 export interface UserProfile {
     name: string;
@@ -45,5 +53,5 @@ export interface UserProfile {
     role: string;
 }
 
-export type Entity = Block | Sector | Room | Asset | Movement;
-export type EntityType = 'blocos' | 'setores' | 'salas' | 'patrimonios' | 'movimentacoes';
+export type Entity = Block | Sector | Room | Asset | LogGeral | LogEspecifico;
+export type EntityType = 'blocos' | 'setores' | 'salas' | 'patrimonios' | 'log_geral' | 'log_especifico';

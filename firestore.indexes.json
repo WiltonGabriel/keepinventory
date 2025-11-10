@@ -1,29 +1,4 @@
 
 {
-  "indexes": [
-    {
-      "collectionGroup": "movimentacoes",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "assetId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "timestamp",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "movimentacoes",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "timestamp",
-          "order": "DESCENDING"
-        }
-      ]
-    }
-  ]
+  "indexes": []
 }

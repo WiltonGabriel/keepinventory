@@ -20,18 +20,19 @@ service cloud.firestore {
     }
 
     match /patrimonios/{patrimonioId} {
-      allow read, create, update, delete: if isSignedIn();
+      allow read, write: if isSignedIn();
+
+      // Regra para o histórico individual (sub-coleção)
+      match /log_especifico/{logId} {
+        allow read, create: if isSignedIn();
+        allow update, delete: if false; // Imutável
+      }
     }
 
-    // Regra para a COLEÇÃO /movimentacoes (para o Dashboard)
-    match /movimentacoes {
-      allow list, create: if request.auth != null;
-    }
-
-    // Regra para o DOCUMENTO /movimentacoes/{id} (para o Histórico Individual)
-    match /movimentacoes/{movimentacaoId} {
-      allow get, create, delete: if request.auth != null;
-      allow update: if false; // Imutável
+    // Regra para o log geral do dashboard (coleção principal)
+    match /log_geral/{logId} {
+      allow list, create: if isSignedIn();
+      allow get, update, delete: if false;
     }
   }
 }

@@ -96,20 +96,30 @@
         "roomId"
       ]
     },
-    "Movement": {
+    "LogGeral": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Movimentacao",
+      "title": "LogGeral",
       "type": "object",
-      "description": "Representa um registro de movimentação ou histórico de alterações de um patrimônio.",
+      "description": "Representa um registro de log simples para o dashboard geral.",
       "properties": {
-        "assetId": {
+        "timestamp": {
           "type": "string",
-          "description": "Referência ao Patrimônio. (Relação: Patrimonio 1:N Movimentacao)"
+          "format": "date-time",
+          "description": "O carimbo de data/hora de quando a ação ocorreu."
         },
-        "assetName": {
-            "type": "string",
-            "description": "O nome do patrimônio no momento da movimentação."
-        },
+        "acao": {
+          "type": "string",
+          "description": "Descrição da ação que ocorreu."
+        }
+      },
+      "required": ["timestamp", "acao"]
+    },
+    "LogEspecifico": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LogEspecifico",
+      "type": "object",
+      "description": "Representa um registro de log detalhado para o histórico de um patrimônio específico.",
+      "properties": {
         "timestamp": {
           "type": "string",
           "format": "date-time",
@@ -127,9 +137,13 @@
         "to": {
           "type": "string",
           "description": "O estado ou localização após da alteração."
+        },
+        "assetNameSnapshot": {
+          "type": "string",
+          "description": "O nome do patrimônio no momento da movimentação."
         }
       },
-      "required": ["assetId", "assetName", "timestamp", "action", "from", "to"]
+      "required": ["timestamp", "action", "from", "to", "assetNameSnapshot"]
     }
   },
   "auth": {
@@ -143,84 +157,48 @@
       {
         "path": "/blocos/{blocoId}",
         "definition": {
-          "entityName": "Bloco",
-          "schema": {
-            "$ref": "#/backend/entities/Block"
-          },
-          "description": "Armazena dados do bloco. O 'blocoId' é um identificador único para cada bloco.",
-          "params": [
-            {
-              "name": "blocoId",
-              "description": "Identificador único para o bloco."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/Block" },
+          "description": "Coleção de blocos."
         }
       },
       {
         "path": "/setores/{setorId}",
         "definition": {
-          "entityName": "Setor",
-          "schema": {
-            "$ref": "#/backend/entities/Sector"
-          },
-          "description": "Armazena dados do setor. O 'setorId' é um identificador único para cada setor.",
-          "params": [
-            {
-              "name": "setorId",
-              "description": "Identificador único para o setor."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/Sector" },
+          "description": "Coleção de setores."
         }
       },
       {
         "path": "/salas/{salaId}",
         "definition": {
-          "entityName": "Sala",
-          "schema": {
-            "$ref": "#/backend/entities/Room"
-          },
-          "description": "Armazena dados da sala. O 'salaId' é um identificador único para cada sala.",
-          "params": [
-            {
-              "name": "salaId",
-              "description": "Identificador único para a sala."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/Room" },
+          "description": "Coleção de salas."
         }
       },
       {
         "path": "/patrimonios/{patrimonioId}",
         "definition": {
-          "entityName": "Patrimonio",
-          "schema": {
-            "$ref": "#/backend/entities/Asset"
-          },
-          "description": "Armazena dados do patrimônio. O 'patrimonioId' é um identificador único para cada patrimônio.",
-          "params": [
+          "schema": { "$ref": "#/backend/entities/Asset" },
+          "description": "Coleção de patrimônios.",
+          "subcollections": [
             {
-              "name": "patrimonioId",
-              "description": "Identificador único para o patrimônio."
+              "path": "log_especifico/{logId}",
+              "definition": {
+                "schema": { "$ref": "#/backend/entities/LogEspecifico" },
+                "description": "Sub-coleção para o histórico detalhado de um patrimônio."
+              }
             }
           ]
         }
       },
       {
-        "path": "/movimentacoes/{movimentacaoId}",
+        "path": "/log_geral/{logId}",
         "definition": {
-          "entityName": "Movimentacao",
-          "schema": {
-            "$ref": "#/backend/entities/Movement"
-          },
-          "description": "Armazena o histórico de movimentações para todos os patrimônios. O 'movimentacaoId' é único.",
-          "params": [
-            {
-              "name": "movimentacaoId",
-              "description": "Identificador único para a movimentação."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/LogGeral" },
+          "description": "Coleção principal para o log de atividades geral do dashboard."
         }
       }
     ],
-    "reasoning": "A estrutura do Firestore foi refatorada para usar uma coleção principal 'movimentacoes'. Isso simplifica a consulta para o log de atividades global no dashboard. O histórico de um item específico é consultado filtrando esta coleção por 'assetId'."
+    "reasoning": "A arquitetura de log foi dividida em duas coleções: uma coleção principal 'log_geral' para o dashboard e uma sub-coleção 'log_especifico' dentro de cada patrimônio para o histórico detalhado, eliminando conflitos de regras de segurança."
   }
 }
