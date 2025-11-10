@@ -10,14 +10,19 @@
     --card-foreground: 0 0% 20%; /* #333333 */
     --popover: 0 0% 100%; /* #FFFFFF */
     --popover-foreground: 0 0% 20%; /* #333333 */
+    
+    /* A cor primária agora será a base para as outras cores */
     --primary: 206 100% 24%; /* #00447C */
     --primary-foreground: 0 0% 98%;
-    --secondary: 211 100% 50%; /* #007BFF */
-    --secondary-foreground: 0 0% 98%;
+    
+    /* Secundária e Accent serão derivadas da cor primária */
+    --secondary: var(--primary);
+    --secondary-foreground: var(--primary-foreground);
+    --accent: var(--primary);
+    --accent-foreground: var(--primary-foreground);
+
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 203 100% 61%; /* #38B6FF */
-    --accent-foreground: 206 100% 24%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --warning: 45 100% 51%; /* Amarelo */
@@ -26,7 +31,7 @@
     --neutral-foreground: 0 0% 98%;
     --border: 210 17% 90%; /* #dee2e6 */
     --input: 210 17% 90%;
-    --ring: 211 100% 50%;
+    --ring: var(--primary);
     --radius: 0.5rem;
   }
 
@@ -37,14 +42,19 @@
     --card-foreground: 0 0% 88%;
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 88%;
+
+    /* Cor primária no modo escuro */
     --primary: 206 100% 70%;
     --primary-foreground: 206 100% 10%;
-    --secondary: 211 100% 60%;
-    --secondary-foreground: 0 0% 98%;
+
+    /* Secundária e Accent derivadas da cor primária no modo escuro */
+    --secondary: var(--primary);
+    --secondary-foreground: var(--primary-foreground);
+    --accent: var(--primary);
+    --accent-foreground: 0 0% 98%;
+
     --muted: 220 10% 15%;
     --muted-foreground: 220 10% 45%;
-    --accent: 203 100% 61%; /* #38B6FF */
-    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --warning: 45 100% 51%;
@@ -53,7 +63,7 @@
     --neutral-foreground: 0 0% 98%;
     --border: 0 0% 27%; /* #444444 */
     --input: 0 0% 27%;
-    --ring: 211 100% 60%;
+    --ring: var(--primary);
   }
 }
 

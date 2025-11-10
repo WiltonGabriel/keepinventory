@@ -6,13 +6,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
 
 export default function SettingsPage() {
   
+  const { theme } = useTheme();
+
   const handleColorChange = (color: string) => {
-    document.documentElement.style.setProperty('--primary', color);
+    // Para modo claro, usamos a cor diretamente
+    const lightColor = color;
+    // Para modo escuro, aumentamos a luminosidade para melhor contraste
+    const [h, s] = color.split(' ').map(parseFloat);
+    const darkColor = `${h} ${s}% 70%`;
+
+    const root = document.documentElement;
+    
+    // Define a cor primária para o tema atual
+    if (theme === 'dark') {
+      root.style.setProperty('--primary', darkColor);
+    } else {
+      root.style.setProperty('--primary', lightColor);
+    }
   };
 
+  // Observa mudanças no tema para reaplicar a cor correta
+  // Esta lógica pode ser aprimorada se o usuário puder salvar a cor.
+  // Por enquanto, a cor é resetada ao trocar de tema.
 
   return (
     <div className="flex flex-col gap-8">
@@ -64,14 +83,15 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div>
-                        <h3 className="text-lg font-medium mb-2">Cor Primária</h3>
-                        <p className="text-sm text-muted-foreground mb-4">Selecione a cor principal do sistema. A alteração é aplicada em tempo real.</p>
-                        <div className="flex gap-2">
+                        <h3 className="text-lg font-medium mb-2">Cor Principal do Sistema</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Selecione a cor principal do sistema. A alteração é aplicada em tempo real e afeta vários componentes da interface.</p>
+                        <div className="flex flex-wrap gap-2">
                              <Button onClick={() => handleColorChange('206 100% 24%')} style={{backgroundColor: 'hsl(206, 100%, 24%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Azul Padrão"/>
                              <Button onClick={() => handleColorChange('347 77% 50%')} style={{backgroundColor: 'hsl(347, 77%, 50%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Vermelho"/>
                              <Button onClick={() => handleColorChange('142 76% 36%')} style={{backgroundColor: 'hsl(142, 76%, 36%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Verde"/>
-                             <Button onClick={() => handleColorChange('256 64% 52%')} style={{backgroundColor: 'hsl(256, 64%, 52%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Roxo"/>
+                             <Button onClick={() => handle_color_change('256 64% 52%')} style={{backgroundColor: 'hsl(256, 64%, 52%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="roxo"/>
                              <Button onClick={() => handleColorChange('24 94% 51%')} style={{backgroundColor: 'hsl(24, 94%, 51%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Laranja"/>
+                             <Button onClick={() => handleColorChange('275 84% 30%')} style={{backgroundColor: 'hsl(275, 84%, 30%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Roxo Escuro"/>
                         </div>
                     </div>
                 </CardContent>
