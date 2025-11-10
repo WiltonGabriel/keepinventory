@@ -11,12 +11,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Archive, Building, DoorOpen, Building2, BarChart3, CheckCircle, AlertTriangle, ArrowRight, Edit3, PlusCircle } from "lucide-react";
+import { Archive, Building, DoorOpen, Building2, BarChart3, CheckCircle, AlertTriangle } from "lucide-react";
 import { useUser, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, collectionGroup, query, orderBy, limit } from "firebase/firestore";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
+import { collection } from "firebase/firestore";
 
 type Stats = {
   assetCount: number;
@@ -35,21 +32,11 @@ export default function DashboardPage() {
     const roomsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'rooms') : null, [firestore]);
     const sectorsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'sectors') : null, [firestore]);
     const blocksCollection = useMemoFirebase(() => firestore ? collection(firestore, 'blocks') : null, [firestore]);
-    
-    // Collection Group Query for recent movements across all assets
-    const movementsQuery = useMemoFirebase(
-      () => firestore 
-        ? query(collectionGroup(firestore, "movements"), orderBy("timestamp", "desc"), limit(10)) 
-        : null,
-      [firestore]
-    );
 
     const { data: assets } = useCollection<Asset>(assetsCollection);
     const { data: rooms } = useCollection<Room>(roomsCollection);
     const { data: sectors } = useCollection<Sector>(sectorsCollection);
     const { data: blocks } = useCollection<Block>(blocksCollection);
-    const { data: recentMovements, isLoading: isLoadingMovements } = useCollection<Movement>(movementsQuery);
-
 
   const stats: Stats = useMemo(() => {
     const assetCount = assets?.length || 0;
@@ -72,49 +59,6 @@ export default function DashboardPage() {
     return assets?.filter(a => a.roomId === roomId) || [];
   };
 
-  const getActionIcon = (action: Movement["action"]) => {
-    switch(action) {
-      case 'Criado':
-        return <PlusCircle className="h-4 w-4 text-green-500" />;
-      case 'Status Alterado':
-        return <Edit3 className="h-4 w-4 text-blue-500" />;
-      case 'Movido':
-        return <ArrowRight className="h-4 w-4 text-orange-500" />;
-      case 'Nome Alterado':
-        return <Edit3 className="h-4 w-4 text-purple-500" />;
-      default:
-        return null;
-    }
-  }
-
-  const renderMovementDetails = (movement: Movement) => {
-    switch (movement.action) {
-        case "Criado":
-            return `Patrimônio "${movement.assetName}" foi criado.`;
-        case "Status Alterado":
-            return (
-            <>
-                Status de <span className="font-semibold">{movement.assetName}</span> alterado para <Badge variant="outline">{movement.to}</Badge>.
-            </>
-            );
-        case "Movido":
-            return (
-            <>
-                <span className="font-semibold">{movement.assetName}</span> movido para <Badge variant="secondary">{movement.to}</Badge>.
-            </>
-            );
-        case "Nome Alterado":
-            return (
-                <>
-                    Nome de <span className="font-semibold">{movement.from}</span> alterado para <span className="font-semibold">{movement.to}</span>.
-                </>
-            );
-        default:
-            return "Ação desconhecida.";
-    }
-  };
-
-
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-3xl font-bold tracking-tight">
@@ -128,77 +72,47 @@ export default function DashboardPage() {
           <TabsTrigger value="charts">Gráficos</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="overview" className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Patrimônios</CardTitle>
-                    <Archive className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                    <div className="text-2xl font-bold">{stats.assetCount}</div>
-                    <p className="text-xs text-muted-foreground">Itens cadastrados no sistema</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Itens Ativos</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    </CardHeader>
-                    <CardContent>
-                    <div className="text-2xl font-bold">{stats.activeAssetCount}</div>
-                    <p className="text-xs text-muted-foreground">Itens com status "Em Uso"</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Itens Perdidos</CardTitle>
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                    </CardHeader>
-                    <CardContent>
-                    <div className="text-2xl font-bold">{stats.lostAssetCount}</div>
-                    <p className="text-xs text-muted-foreground">Itens com status "Perdido"</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Locais Mapeados</CardTitle>
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                    <div className="text-2xl font-bold">{stats.blockCount + stats.sectorCount + stats.roomCount}</div>
-                    <p className="text-xs text-muted-foreground">{stats.blockCount} blocos, {stats.sectorCount} setores, {stats.roomCount} salas</p>
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="lg:col-span-1">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">Atividade Recente</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoadingMovements && <p className="text-muted-foreground text-sm">Carregando atividades...</p>}
-                        {!isLoadingMovements && (!recentMovements || recentMovements.length === 0) && (
-                            <p className="text-muted-foreground text-sm">Nenhuma atividade recente encontrada.</p>
-                        )}
-                        {recentMovements && recentMovements.length > 0 && (
-                             <ul className="space-y-4">
-                                {recentMovements.map((movement) => (
-                                    <li key={movement.id} className="flex items-start gap-3">
-                                        <div className="flex-shrink-0 pt-1">{getActionIcon(movement.action)}</div>
-                                        <div className="flex-grow">
-                                            <div className="text-sm">{renderMovementDetails(movement)}</div>
-                                            <p className="text-xs text-muted-foreground">
-                                                {movement.timestamp ? format(movement.timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'Data desconhecida'}
-                                            </p>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+        <TabsContent value="overview" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total de Patrimônios</CardTitle>
+                <Archive className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                <div className="text-2xl font-bold">{stats.assetCount}</div>
+                <p className="text-xs text-muted-foreground">Itens cadastrados no sistema</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Itens Ativos</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                <div className="text-2xl font-bold">{stats.activeAssetCount}</div>
+                <p className="text-xs text-muted-foreground">Itens com status "Em Uso"</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Itens Perdidos</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                </CardHeader>
+                <CardContent>
+                <div className="text-2xl font-bold">{stats.lostAssetCount}</div>
+                <p className="text-xs text-muted-foreground">Itens com status "Perdido"</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Locais Mapeados</CardTitle>
+                <Building className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                <div className="text-2xl font-bold">{stats.blockCount + stats.sectorCount + stats.roomCount}</div>
+                <p className="text-xs text-muted-foreground">{stats.blockCount} blocos, {stats.sectorCount} setores, {stats.roomCount} salas</p>
+                </CardContent>
+            </Card>
         </TabsContent>
 
         <TabsContent value="hierarchy">

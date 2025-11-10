@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview Firestore Security Rules for the inventory system.
  *
@@ -40,24 +39,14 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
       
       /**
-       * @description Manages write access to the nested movements subcollection.
-       * Allows create and delete for authenticated users, aligning with the parent asset's permissions.
+       * @description Manages access to the nested movements subcollection.
+       * Allows creating and deleting logs for authenticated users.
        * Prevents modification of existing logs to ensure data integrity.
        */
       match /movements/{movementId} {
-        allow create, delete: if isSignedIn();
+        allow read, create, delete: if isSignedIn();
         allow update: if false; // Deny updates to make logs immutable.
       }
-    }
-    
-    /**
-     * @description This rule allows a collection group query on 'movements'.
-     * It's necessary for features like the "Recent Activity" feed on the dashboard,
-     * which needs to query across all 'movements' subcollections.
-     * It grants read-only access to any authenticated user.
-     */
-    match /{path=**}/movements/{movementId} {
-      allow read: if isSignedIn();
     }
 
     function isSignedIn() {
