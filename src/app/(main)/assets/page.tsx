@@ -18,10 +18,10 @@ import { deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlo
 
 export default function AssetsPage() {
   const firestore = useFirestore();
-  const assetsCollection = useMemoFirebase(() => collection(firestore, "assets"), [firestore]);
-  const roomsCollection = useMemoFirebase(() => collection(firestore, "rooms"), [firestore]);
-  const sectorsCollection = useMemoFirebase(() => collection(firestore, "sectors"), [firestore]);
-  const blocksCollection = useMemoFirebase(() => collection(firestore, "blocks"), [firestore]);
+  const assetsCollection = useMemoFirebase(() => firestore ? collection(firestore, "assets") : null, [firestore]);
+  const roomsCollection = useMemoFirebase(() => firestore ? collection(firestore, "rooms") : null, [firestore]);
+  const sectorsCollection = useMemoFirebase(() => firestore ? collection(firestore, "sectors") : null, [firestore]);
+  const blocksCollection = useMemoFirebase(() => firestore ? collection(firestore, "blocks") : null, [firestore]);
 
   const { data: assets, isLoading: isLoadingAssets } = useCollection<Asset>(assetsCollection);
   const { data: rooms, isLoading: isLoadingRooms } = useCollection<Room>(roomsCollection);
@@ -92,10 +92,11 @@ export default function AssetsPage() {
     if (!firestore) return;
 
     if (editingAsset) {
-      // When editing, only update name and status. Location is not changed.
+      // When editing, update all fields.
       updateDocumentNonBlocking(doc(firestore, "assets", editingAsset.id), {
         name: values.name,
         status: values.status,
+        roomId: values.roomId,
       });
       toast({ title: "Patrimônio atualizado", description: "As informações do item foram salvas." });
     } else {
