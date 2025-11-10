@@ -5,18 +5,29 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Separator } from '@/components/ui/separator';
 
 export default function SettingsPage() {
   const [activeColor, setActiveColor] = useState('206 100% 24%');
+  const [fontSizeMultiplier, setFontSizeMultiplier] = useState(1);
+
+  useEffect(() => {
+    // Seta a cor inicial no carregamento
+    handleColorChange(activeColor);
+
+    // Lê o valor inicial do multiplicador de fonte
+    const root = document.documentElement;
+    const initialMultiplier = parseFloat(getComputedStyle(root).getPropertyValue('--font-size-multiplier').trim());
+    setFontSizeMultiplier(initialMultiplier);
+  }, []); // O array vazio garante que isso rode apenas uma vez
 
   const handleColorChange = (color: string) => {
     const root = document.documentElement;
     const [h, s] = color.split(' ').map(parseFloat);
 
     const lightColor = color;
-    const darkColor = `${h} ${s}% 70%`; // Aumenta a luminosidade para o modo escuro
+    const darkColor = `${h} ${s}% 70%`;
 
     root.style.setProperty('--primary-light', lightColor);
     root.style.setProperty('--primary-dark', darkColor);
@@ -29,12 +40,13 @@ export default function SettingsPage() {
     let newMultiplier;
 
     if (direction === 'increase') {
-      newMultiplier = Math.min(currentMultiplier + 0.1, 1.5); // Limite máximo de 150%
+      newMultiplier = Math.min(currentMultiplier + 0.1, 1.5);
     } else {
-      newMultiplier = Math.max(currentMultiplier - 0.1, 0.8); // Limite mínimo de 80%
+      newMultiplier = Math.max(currentMultiplier - 0.1, 0.8);
     }
     
     root.style.setProperty('--font-size-multiplier', newMultiplier.toString());
+    setFontSizeMultiplier(newMultiplier); // Atualiza o estado
   };
 
   return (
@@ -78,11 +90,11 @@ export default function SettingsPage() {
                  <div>
                     <h3 className="text-lg font-medium mb-2 flex items-center gap-2"><Text className="h-5 w-5"/> Tamanho da Fonte</h3>
                     <p className="text-sm text-muted-foreground mb-4">Ajuste o tamanho do texto em toda a aplicação para melhor legibilidade.</p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-4">
                         <Button onClick={() => changeFontSize('decrease')} variant="outline" size="icon" aria-label="Diminuir fonte">
                             <ZoomOut className="h-4 w-4" />
                         </Button>
-                        <span className="text-sm text-muted-foreground">A</span>
+                        <span className="text-sm font-semibold text-muted-foreground w-16 text-center">{Math.round(fontSizeMultiplier * 100)}%</span>
                         <Button onClick={() => changeFontSize('increase')} variant="outline" size="icon" aria-label="Aumentar fonte">
                             <ZoomIn className="h-4 w-4" />
                         </Button>
