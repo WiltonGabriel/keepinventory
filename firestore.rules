@@ -1,37 +1,38 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
+    // Temporarily allow all reads and writes for development without authentication.
+    // WARNING: This makes your database publicly accessible.
+    // TODO: Re-implement security rules before production.
 
     match /blocos/{blocoId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /setores/{setorId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /salas/{salaId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /patrimonios/{patrimonioId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
 
-      // Regra para o histórico individual (sub-coleção)
+      // Rule for individual history (sub-collection)
       match /log_especifico/{logId} {
-        allow read, create: if isSignedIn();
-        allow update, delete: if false; // Imutável
+        allow read, create: if true;
+        allow update, delete: if false; // Immutable
       }
     }
 
-    // Regra para o log geral do dashboard (coleção principal)
+    // Rule for the general dashboard log (main collection)
     match /log_geral/{logId} {
-      allow list, create: if isSignedIn();
+      allow list, create: if true;
       allow get, update, delete: if false;
     }
   }
