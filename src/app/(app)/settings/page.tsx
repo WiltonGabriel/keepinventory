@@ -1,165 +1,96 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Sector, Block } from '@/lib/types';
-import { DataTable } from '@/components/data-table';
-import { Button } from '@/components/ui/button';
-import { Edit, Trash2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { HardConfirmationDialog } from '@/components/ui/hard-confirmation-dialog';
-import { SectorForm } from './sector-form'; // Renomeado de ../sectors/sector-form
-import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
-import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { AlertCircle, Palette, User, ShieldAlert, Warehouse, Building2, DoorOpen } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function SettingsPage() {
-  const firestore = useFirestore();
-  const sectorsCollection = useMemoFirebase(() => collection(firestore, 'setores'), [firestore]);
-  const blocksCollection = useMemoFirebase(() => collection(firestore, 'blocos'), [firestore]);
-
-  const { data: sectors, isLoading: isLoadingSectors } = useCollection<Sector>(sectorsCollection);
-  const { data: blocks, isLoading: isLoadingBlocks } = useCollection<Block>(blocksCollection);
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingSector, setEditingSector] = useState<Sector | undefined>(undefined);
-  const { toast } = useToast();
-
-  const handleAdd = () => {
-    setEditingSector(undefined);
-    setIsFormOpen(true);
+  
+  const handleColorChange = (color: string) => {
+    document.documentElement.style.setProperty('--primary', color);
   };
 
-  const openEditForm = (sector: Sector) => {
-    setEditingSector(sector);
-    setIsFormOpen(true);
-  };
-
-  const handleDelete = (id: string) => {
-    if (!firestore) return;
-    // TODO: Consider cascading deletes for rooms and assets within this sector.
-    deleteDocumentNonBlocking(doc(firestore, 'setores', id));
-    toast({ title: 'Setor removido', description: 'O setor foi removido com sucesso.' });
-  };
-
-  const handleFormSubmit = (values: Omit<Sector, 'id'>) => {
-    if (!firestore) return;
-    if (editingSector) {
-      updateDocumentNonBlocking(doc(firestore, 'setores', editingSector.id), values);
-      toast({ title: 'Setor atualizado', description: 'As informações do setor foram salvas.' });
-    } else {
-      addDocumentNonBlocking(collection(firestore, 'setores'), values);
-      toast({ title: 'Setor adicionado', description: 'Um novo setor foi criado com sucesso.' });
-    }
-    setIsFormOpen(false);
-    setEditingSector(undefined);
-  };
-
-  const getBlockName = (blockId: string) => {
-    return blocks?.find((b) => b.id === blockId)?.name || 'N/A';
-  };
-
-  const filteredSectors = useMemo(() => {
-    if (!sectors) return [];
-    return sectors.filter(
-      (sector) =>
-        sector.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getBlockName(sector.blockId).toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [sectors, searchQuery, blocks]);
-
-  const isLoading = isLoadingSectors || isLoadingBlocks;
-
-  const columns = [
-    {
-      accessorKey: 'name',
-      header: 'Nome do Setor',
-      cell: ({ row }: { row: { original: Sector } }) => row.original.name,
-    },
-    {
-      accessorKey: 'abbreviation',
-      header: 'Prefixo (Sigla)',
-      cell: ({ row }: { row: { original: Sector } }) => <Badge variant="secondary">{row.original.abbreviation}</Badge>,
-    },
-    {
-      accessorKey: 'block',
-      header: 'Bloco',
-      cell: ({ row }: { row: { original: Sector } }) => getBlockName(row.original.blockId),
-    },
-    {
-      accessorKey: 'actions',
-      header: 'Ações',
-      cell: ({ row }: { row: { original: Sector } }) => (
-        <div className="flex gap-2">
-           <Button variant="outline" size="icon" onClick={() => openEditForm(row.original)}>
-                <Edit className="h-4 w-4" />
-            </Button>
-
-          <HardConfirmationDialog
-            trigger={
-              <Button variant="destructive" size="icon">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            }
-            title="Você tem certeza?"
-            description="Esta ação não pode ser desfeita. Isso excluirá permanentemente o setor e todas as salas e patrimônios associados a ele. Para confirmar, digite:"
-            itemName={row.original.name}
-            onConfirm={() => handleDelete(row.original.id)}
-            confirmButtonText="Eu entendo, apagar este Setor"
-            variant="destructive"
-          />
-        </div>
-      ),
-    },
-  ];
 
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Gerenciador de Prefixos de Setor</CardTitle>
-          <CardDescription>
-            Defina e edite os setores e seus prefixos de 3 letras, que são usados para gerar os IDs dos patrimônios.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="flex items-center justify-end mb-4 gap-4">
-                 <Input
-                    type="search"
-                    placeholder="Pesquisar setores..."
-                    className="w-64"
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                <Button onClick={handleAdd} className="gap-2">
-                    Adicionar Setor
-                </Button>
+      <Tabs defaultValue="appearance" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="users">
+            <User className="mr-2 h-4 w-4" /> Usuários
+          </TabsTrigger>
+          <TabsTrigger value="appearance">
+            <Palette className="mr-2 h-4 w-4" /> Aparência
+          </TabsTrigger>
+          <TabsTrigger value="danger-zone">
+            <ShieldAlert className="mr-2 h-4 w-4" /> Zona de Perigo
+          </TabsTrigger>
+        </TabsList>
+        
+        <Alert variant="default" className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-800 dark:text-blue-300">Aviso Importante</AlertTitle>
+          <AlertDescription className="text-blue-700 dark:text-blue-400">
+            A gestão da hierarquia do inventário (Blocos, Setores e Salas) e dos prefixos de patrimônio é realizada em suas respectivas páginas. Use os links abaixo para navegar.
+            <div className="mt-2 flex gap-2">
+                <Button variant="outline" size="sm" asChild><Link href="/blocks"><Building className="mr-2 h-4 w-4"/> Blocos</Link></Button>
+                <Button variant="outline" size="sm" asChild><Link href="/sectors"><Building2 className="mr-2 h-4 w-4"/> Setores</Link></Button>
+                <Button variant="outline" size="sm" asChild><Link href="/rooms"><DoorOpen className="mr-2 h-4 w-4"/> Salas</Link></Button>
             </div>
-             <DataTable columns={columns} data={filteredSectors} emptyStateMessage={isLoading ? 'Carregando...' : 'Nenhum setor encontrado.'} />
-        </CardContent>
-      </Card>
-      
-      <Dialog
-        open={isFormOpen}
-        onOpenChange={(open) => {
-          if (!open) setEditingSector(undefined);
-          setIsFormOpen(open);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingSector ? 'Editar Setor' : 'Cadastrar Setor'}</DialogTitle>
-          </DialogHeader>
-          <SectorForm onSubmit={handleFormSubmit} defaultValues={editingSector} blocks={blocks || []} />
-        </DialogContent>
-      </Dialog>
+          </AlertDescription>
+        </Alert>
 
+        <TabsContent value="users">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Gerenciamento de Usuários</CardTitle>
+                    <CardDescription>Esta funcionalidade requer um ambiente de servidor seguro (backend) para ser implementada e não está disponível na versão atual.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">O gerenciamento de usuários e permissões (roles) precisa do Firebase Admin SDK, que não pode ser executado de forma segura no navegador do cliente. A implementação futura desta funcionalidade exigirá a criação de uma API de backend.</p>
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="appearance">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Aparência</CardTitle>
+                    <CardDescription>Personalize a identidade visual da aplicação.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div>
+                        <h3 className="text-lg font-medium mb-2">Cor Primária</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Selecione a cor principal do sistema. A alteração é aplicada em tempo real.</p>
+                        <div className="flex gap-2">
+                             <Button onClick={() => handleColorChange('206 100% 24%')} style={{backgroundColor: 'hsl(206, 100%, 24%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Azul Padrão"/>
+                             <Button onClick={() => handleColorChange('347 77% 50%')} style={{backgroundColor: 'hsl(347, 77%, 50%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Vermelho"/>
+                             <Button onClick={() => handleColorChange('142 76% 36%')} style={{backgroundColor: 'hsl(142, 76%, 36%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Verde"/>
+                             <Button onClick={() => handleColorChange('256 64% 52%')} style={{backgroundColor: 'hsl(256, 64%, 52%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Roxo"/>
+                             <Button onClick={() => handleColorChange('24 94% 51%')} style={{backgroundColor: 'hsl(24, 94%, 51%)'}} className="w-10 h-10 rounded-full border-2 border-transparent focus:border-ring" aria-label="Laranja"/>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="danger-zone">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Zona de Perigo</CardTitle>
+                    <CardDescription>Ações destrutivas que não podem ser desfeitas. Esta funcionalidade requer um backend e não está disponível.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <p className="text-sm text-muted-foreground">Ações como "Resetar Inventário" ou "Reset de Fábrica" são operações críticas que devem ser executadas em um ambiente de servidor seguro para garantir a integridade dos dados e evitar exclusões acidentais em massa pelo cliente.</p>
+                </CardContent>
+            </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

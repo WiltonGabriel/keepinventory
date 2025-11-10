@@ -62,7 +62,7 @@ export function SectorForm({ onSubmit, defaultValues, blocks }: SectorFormProps)
           name="abbreviation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Sigla (3 letras)</FormLabel>
+              <FormLabel>Prefixo (Sigla de 3 letras)</FormLabel>
               <FormControl>
                 <Input placeholder="Ex: TIN" {...field} maxLength={3} />
               </FormControl>
