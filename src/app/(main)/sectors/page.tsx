@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -8,7 +9,7 @@ import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { HardConfirmationDialog } from "@/components/ui/hard-confirmation-dialog";
 import { SectorForm } from "./sector-form";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,7 @@ export default function SectorsPage() {
     setIsFormOpen(true);
   };
 
-  const handleEdit = (sector: Sector) => {
+  const openEditForm = (sector: Sector) => {
     setEditingSector(sector);
     setIsFormOpen(true);
   };
@@ -91,30 +92,32 @@ export default function SectorsPage() {
       header: "Ações",
       cell: (item: Sector) => (
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => handleEdit(item)}>
-            <Edit className="h-4 w-4" />
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+          <HardConfirmationDialog
+            trigger={
+              <Button variant="outline" size="icon">
+                <Edit className="h-4 w-4" />
+              </Button>
+            }
+            title="Confirmar Edição"
+            description="Para prosseguir com a edição, por favor, digite o nome do setor:"
+            itemName={item.name}
+            onConfirm={() => openEditForm(item)}
+            confirmButtonText="Confirmar e Editar"
+          />
+
+          <HardConfirmationDialog
+            trigger={
               <Button variant="destructive" size="icon">
                 <Trash2 className="h-4 w-4" />
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta ação não pode ser desfeita. Isso excluirá permanentemente o setor e todas as salas e patrimônios associados a ele.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleDelete(item.id)}>
-                  Excluir
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            }
+            title="Você tem certeza?"
+            description="Esta ação não pode ser desfeita. Isso excluirá permanentemente o setor e todas as salas e patrimônios associados a ele. Para confirmar, digite:"
+            itemName={item.name}
+            onConfirm={() => handleDelete(item.id)}
+            confirmButtonText="Eu entendo as consequências, apagar este Setor"
+            variant="destructive"
+          />
         </div>
       ),
     },
@@ -130,7 +133,7 @@ export default function SectorsPage() {
         searchPlaceholder="Pesquisar setores..."
       />
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog open={isFormOpen} onOpenChange={(open) => { if(!open) setEditingSector(undefined); setIsFormOpen(open);}}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingSector ? "Editar Setor" : "Cadastrar Setor"}</DialogTitle>

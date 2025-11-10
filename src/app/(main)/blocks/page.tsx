@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -12,19 +13,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { HardConfirmationDialog } from "@/components/ui/hard-confirmation-dialog";
 import { BlockForm } from "./block-form";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,7 +39,7 @@ export default function BlocksPage() {
     setIsFormOpen(true);
   };
 
-  const handleEdit = (block: Block) => {
+  const openEditForm = (block: Block) => {
     setEditingBlock(block);
     setIsFormOpen(true);
   };
@@ -90,30 +80,32 @@ export default function BlocksPage() {
       header: "Ações",
       cell: (item: Block) => (
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => handleEdit(item)}>
-            <Edit className="h-4 w-4" />
-          </Button>
-           <AlertDialog>
-            <AlertDialogTrigger asChild>
+           <HardConfirmationDialog
+            trigger={
+              <Button variant="outline" size="icon">
+                <Edit className="h-4 w-4" />
+              </Button>
+            }
+            title="Confirmar Edição"
+            description="Para prosseguir com a edição, por favor, digite o nome do bloco:"
+            itemName={item.name}
+            onConfirm={() => openEditForm(item)}
+            confirmButtonText="Confirmar e Editar"
+          />
+
+          <HardConfirmationDialog
+            trigger={
               <Button variant="destructive" size="icon">
                 <Trash2 className="h-4 w-4" />
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta ação não pode ser desfeita. Isso excluirá permanentemente o bloco e todos os setores, salas e patrimônios associados a ele.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleDelete(item.id)}>
-                  Excluir
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            }
+            title="Você tem certeza?"
+            description="Esta ação não pode ser desfeita. Isso excluirá permanentemente o bloco e todos os setores, salas e patrimônios associados a ele. Para confirmar, digite:"
+            itemName={item.name}
+            onConfirm={() => handleDelete(item.id)}
+            confirmButtonText="Eu entendo as consequências, apagar este Bloco"
+            variant="destructive"
+          />
         </div>
       ),
     },
@@ -129,7 +121,7 @@ export default function BlocksPage() {
         searchPlaceholder="Pesquisar blocos..."
       />
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog open={isFormOpen} onOpenChange={(open) => { if(!open) setEditingBlock(undefined); setIsFormOpen(open);}}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingBlock ? "Editar Bloco" : "Cadastrar Bloco"}</DialogTitle>
