@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -20,18 +21,12 @@ service cloud.firestore {
     }
 
     match /patrimonios/{patrimonioId} {
-      allow read, write: if isSignedIn();
-      
-      // Regra de escrita para a subcoleção de movimentações
-      match /movements/{movementId} {
-        allow create, delete: if isSignedIn();
-        allow update: if false; // Garante a imutabilidade do log
-      }
+      allow read, create, update, delete: if isSignedIn();
     }
 
-    // Regra para a consulta collectionGroup no dashboard
-    match /{path=**}/movements/{movementId} {
-      allow list: if isSignedIn();
+    match /movimentacoes/{movimentacaoId} {
+      allow read, create, delete: if isSignedIn();
+      allow update: if false; // Garante imutabilidade do log
     }
   }
 }

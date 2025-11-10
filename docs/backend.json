@@ -102,6 +102,10 @@
       "type": "object",
       "description": "Representa um registro de movimentação ou histórico de alterações de um patrimônio.",
       "properties": {
+        "assetId": {
+          "type": "string",
+          "description": "Referência ao Patrimônio. (Relação: Patrimonio 1:N Movimentacao)"
+        },
         "assetName": {
             "type": "string",
             "description": "O nome do patrimônio no momento da movimentação."
@@ -125,7 +129,7 @@
           "description": "O estado ou localização após da alteração."
         }
       },
-      "required": ["assetName", "timestamp", "action", "from", "to"]
+      "required": ["assetId", "assetName", "timestamp", "action", "from", "to"]
     }
   },
   "auth": {
@@ -197,22 +201,26 @@
               "name": "patrimonioId",
               "description": "Identificador único para o patrimônio."
             }
-          ],
-          "subcollections": [
+          ]
+        }
+      },
+      {
+        "path": "/movimentacoes/{movimentacaoId}",
+        "definition": {
+          "entityName": "Movimentacao",
+          "schema": {
+            "$ref": "#/backend/entities/Movement"
+          },
+          "description": "Armazena o histórico de movimentações para todos os patrimônios. O 'movimentacaoId' é único.",
+          "params": [
             {
-              "path": "movements",
-              "definition": {
-                "entityName": "Movimentacao",
-                "schema": {
-                  "$ref": "#/backend/entities/Movement"
-                },
-                "description": "Armazena o histórico de movimentações para este patrimônio específico."
-              }
+              "name": "movimentacaoId",
+              "description": "Identificador único para a movimentação."
             }
           ]
         }
       }
     ],
-    "reasoning": "A estrutura do Firestore foi refatorada para usar uma subcoleção 'movements' dentro de cada 'patrimonio'. Isso simplifica as consultas de histórico para um item específico e permite uma consulta 'collectionGroup' para o log de atividades global no dashboard. As regras de segurança são mais claras, com permissões de escrita na subcoleção aninhadas sob o patrimônio pai e uma regra de leitura global para a consulta de grupo."
+    "reasoning": "A estrutura do Firestore foi refatorada para usar uma coleção principal 'movimentacoes'. Isso simplifica a consulta para o log de atividades global no dashboard. O histórico de um item específico é consultado filtrando esta coleção por 'assetId'."
   }
 }

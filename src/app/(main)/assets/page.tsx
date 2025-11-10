@@ -13,7 +13,7 @@ import { AssetForm } from "./asset-form";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc, getDocs, query, where, serverTimestamp, writeBatch, WriteBatch } from "firebase/firestore";
+import { collection, doc, getDocs, query, where, serverTimestamp, writeBatch, WriteBatch, addDoc } from "firebase/firestore";
 import { HistoryLog } from "./history-log";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -25,6 +25,7 @@ export default function AssetsPage() {
   const roomsCollection = useMemoFirebase(() => firestore ? collection(firestore, "salas") : null, [firestore]);
   const sectorsCollection = useMemoFirebase(() => firestore ? collection(firestore, "setores") : null, [firestore]);
   const blocksCollection = useMemoFirebase(() => firestore ? collection(firestore, "blocos") : null, [firestore]);
+  const movementsCollection = useMemoFirebase(() => firestore ? collection(firestore, "movimentacoes") : null, [firestore]);
 
   const { data: assets, isLoading: isLoadingAssets } = useCollection<Asset>(assetsCollection);
   const { data: rooms, isLoading: isLoadingRooms } = useCollection<Room>(roomsCollection);
@@ -58,8 +59,8 @@ export default function AssetsPage() {
         const batch = writeBatch(firestore);
         const assetRef = doc(firestore, "patrimonios", id);
         
-        // Find and delete all movements for this asset from its subcollection
-        const movementsQuery = query(collection(firestore, "patrimonios", id, "movements"));
+        // Find and delete all movements for this asset from the top-level collection
+        const movementsQuery = query(collection(firestore, "movimentacoes"), where("assetId", "==", id));
         const movementsSnapshot = await getDocs(movementsQuery);
         movementsSnapshot.forEach(movementDoc => {
             batch.delete(movementDoc.ref);
@@ -122,10 +123,11 @@ export default function AssetsPage() {
     return newId;
   }
 
-  const logMovement = (batch: WriteBatch, assetId: string, assetName: string, action: "Criado" | "Status Alterado" | "Movido" | "Nome Alterado", from: string, to: string) => {
-      if (!firestore) return;
-      const movementRef = doc(collection(firestore, 'patrimonios', assetId, 'movements'));
-      batch.set(movementRef, {
+  const logMovement = (assetId: string, assetName: string, action: "Criado" | "Status Alterado" | "Movido" | "Nome Alterado", from: string, to: string) => {
+      if (!movementsCollection) return;
+      // Using a non-blocking add
+      addDoc(movementsCollection, {
+          assetId,
           assetName,
           action,
           from,
@@ -142,9 +144,10 @@ export default function AssetsPage() {
         const assetRef = doc(firestore, "patrimonios", asset.id);
         
         batch.update(assetRef, { status: newStatus });
-        logMovement(batch, asset.id, asset.name, "Status Alterado", asset.status, newStatus);
-        
         await batch.commit();
+
+        logMovement(asset.id, asset.name, "Status Alterado", asset.status, newStatus);
+        
         toast({ title: "Status atualizado!", description: `O status de "${asset.name}" foi alterado para "${newStatus}".` });
     } catch (error) {
         const contextualError = new FirestorePermissionError({
@@ -165,8 +168,6 @@ export default function AssetsPage() {
     if (!firestore || !rooms) return;
 
     try {
-      const batch = writeBatch(firestore);
-
       if (editingAsset) { // Logic for UPDATE
           const assetRef = doc(firestore, "patrimonios", editingAsset.id);
           const updates: Partial<Asset> = {};
@@ -174,23 +175,24 @@ export default function AssetsPage() {
 
           if (values.name !== editingAsset.name) {
               updates.name = values.name;
-              logMovement(batch, editingAsset.id, values.name, "Nome Alterado", editingAsset.name, values.name);
+              logMovement(editingAsset.id, values.name, "Nome Alterado", editingAsset.name, values.name);
               changed = true;
           }
           if (values.status !== editingAsset.status) {
               updates.status = values.status;
-              logMovement(batch, editingAsset.id, values.name, "Status Alterado", editingAsset.status, values.status);
+              logMovement(editingAsset.id, values.name, "Status Alterado", editingAsset.status, values.status);
               changed = true;
           }
           if (values.roomId !== editingAsset.roomId) {
               updates.roomId = values.roomId;
               const fromRoom = rooms.find(r => r.id === editingAsset.roomId)?.name || 'N/A';
               const toRoom = rooms.find(r => r.id === values.roomId)?.name || 'N/A';
-              logMovement(batch, editingAsset.id, values.name, "Movido", fromRoom, toRoom);
+              logMovement(editingAsset.id, values.name, "Movido", fromRoom, toRoom);
               changed = true;
           }
 
           if (changed) {
+              const batch = writeBatch(firestore);
               batch.update(assetRef, updates);
               await batch.commit();
               toast({ title: "Patrimônio atualizado", description: "As informações do item foram salvas." });
@@ -204,11 +206,13 @@ export default function AssetsPage() {
           
           const newAssetData = { name: values.name, roomId: values.roomId, status: values.status };
           const assetRef = doc(firestore, "patrimonios", newId);
+          
+          const batch = writeBatch(firestore);
           batch.set(assetRef, newAssetData);
-
-          logMovement(batch, newId, values.name, "Criado", "N/A", values.name);
-
           await batch.commit();
+
+          logMovement(newId, values.name, "Criado", "N/A", values.name);
+
           toast({ title: "Patrimônio adicionado", description: `Um novo item (${newId}) foi criado com sucesso.` });
       }
 
