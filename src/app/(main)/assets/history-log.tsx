@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -26,7 +25,8 @@ interface HistoryLogProps {
 export function HistoryLog({ asset, open, onOpenChange }: HistoryLogProps) {
   const firestore = useFirestore();
 
-  // Query the top-level collection for movements related to the specific asset
+  // CORREÇÃO: A consulta agora aponta para a coleção principal 'movimentacoes'
+  // e filtra usando where("assetId", "==", asset.id), conforme a nova arquitetura.
   const movementsQuery = useMemoFirebase(
     () =>
       firestore && asset
