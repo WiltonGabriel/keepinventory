@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -32,7 +31,7 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (error: any) {
       // Se o usuário não for encontrado, cria uma nova conta.
-      if (error.code === AuthErrorCodes.USER_DELETED) {
+      if (error.code === AuthErrorCodes.USER_DELETED || error.code === 'auth/user-not-found') {
         try {
           await createUserWithEmailAndPassword(auth, email, password);
           toast({ title: 'Conta criada com sucesso!', description: 'Redirecionando para o dashboard...' });
@@ -42,7 +41,13 @@ export default function LoginPage() {
         }
       } else {
         // Lida com outros erros de login (senha incorreta, etc.)
-        toast({ variant: 'destructive', title: 'Erro de Login', description: error.message });
+        let friendlyMessage = 'Ocorreu um erro ao tentar fazer login.';
+        if (error.code === AuthErrorCodes.INVALID_PASSWORD) {
+            friendlyMessage = 'Senha incorreta. Por favor, tente novamente.';
+        } else if (error.code === AuthErrorCodes.INVALID_EMAIL) {
+            friendlyMessage = 'O formato do e-mail é inválido.';
+        }
+        toast({ variant: 'destructive', title: 'Erro de Login', description: friendlyMessage });
       }
     } finally {
       setIsLoading(false);
@@ -57,13 +62,7 @@ export default function LoginPage() {
             <h1 className="text-3xl font-bold">KeepInventory</h1>
         </div>
         <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl">Login</CardTitle>
-            <CardDescription>
-              Digite seu e-mail e senha para acessar o sistema. Se não tiver uma conta, uma será criada para você.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
+          <CardContent className="grid gap-4 pt-6">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
