@@ -1,23 +1,10 @@
+
 {
   "indexes": [
     {
       "collectionGroup": "movements",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        {
-          "fieldPath": "timestamp",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "movimentacoes",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "assetId",
-          "order": "ASCENDING"
-        },
         {
           "fieldPath": "timestamp",
           "order": "DESCENDING"

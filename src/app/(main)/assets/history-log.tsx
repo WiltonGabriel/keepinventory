@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Edit3, PlusCircle } from "lucide-react";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, orderBy } from "firebase/firestore";
 
 interface HistoryLogProps {
   asset: Asset | null;
@@ -26,13 +26,12 @@ interface HistoryLogProps {
 export function HistoryLog({ asset, open, onOpenChange }: HistoryLogProps) {
   const firestore = useFirestore();
 
-  // Query the top-level collection for movements related to the specific asset
+  // Query the subcollection for movements related to the specific asset
   const movementsQuery = useMemoFirebase(
     () =>
       firestore && asset
         ? query(
-            collection(firestore, "movimentacoes"),
-            where("assetId", "==", asset.id),
+            collection(firestore, "patrimonios", asset.id, "movements"),
             orderBy("timestamp", "desc")
           )
         : null,

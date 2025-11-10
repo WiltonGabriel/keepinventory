@@ -42,7 +42,7 @@ import {
   useFirestore,
   useMemoFirebase,
 } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
@@ -83,7 +83,7 @@ export default function DashboardPage() {
     () =>
       firestore
         ? query(
-            collection(firestore, 'movimentacoes'),
+            collectionGroup(firestore, 'movements'),
             orderBy('timestamp', 'desc'),
             limit(10)
           )
@@ -144,7 +144,7 @@ export default function DashboardPage() {
   const renderMovementDetails = (movement: Movement) => {
     const assetLink = (
       <Link href="/assets" className="font-bold text-primary hover:underline">
-        {movement.assetName} ({movement.assetId})
+        {movement.assetName}
       </Link>
     );
 

@@ -13,7 +13,7 @@ import { AssetForm } from "./asset-form";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc, getDocs, query, where, serverTimestamp, writeBatch, WriteBatch, addDoc } from "firebase/firestore";
+import { collection, doc, getDocs, query, where, serverTimestamp, writeBatch, WriteBatch } from "firebase/firestore";
 import { HistoryLog } from "./history-log";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -57,9 +57,9 @@ export default function AssetsPage() {
     try {
         const batch = writeBatch(firestore);
         const assetRef = doc(firestore, "patrimonios", id);
-
-        // Find and delete all movements for this asset from the top-level collection
-        const movementsQuery = query(collection(firestore, "movimentacoes"), where("assetId", "==", id));
+        
+        // Find and delete all movements for this asset from its subcollection
+        const movementsQuery = query(collection(firestore, "patrimonios", id, "movements"));
         const movementsSnapshot = await getDocs(movementsQuery);
         movementsSnapshot.forEach(movementDoc => {
             batch.delete(movementDoc.ref);
@@ -124,10 +124,8 @@ export default function AssetsPage() {
 
   const logMovement = (batch: WriteBatch, assetId: string, assetName: string, action: "Criado" | "Status Alterado" | "Movido" | "Nome Alterado", from: string, to: string) => {
       if (!firestore) return;
-      // Add a new document to the top-level 'movimentacoes' collection
-      const movementRef = doc(collection(firestore, 'movimentacoes'));
+      const movementRef = doc(collection(firestore, 'patrimonios', assetId, 'movements'));
       batch.set(movementRef, {
-          assetId,
           assetName,
           action,
           from,

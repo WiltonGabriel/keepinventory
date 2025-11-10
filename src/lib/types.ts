@@ -31,7 +31,6 @@ export interface Asset {
 
 export interface Movement {
     id: string;
-    assetId: string;
     assetName: string;
     timestamp: any; // Firestore Timestamp
     action: "Criado" | "Status Alterado" | "Movido" | "Nome Alterado";
@@ -46,4 +45,4 @@ export interface UserProfile {
 }
 
 export type Entity = Block | Sector | Room | Asset | Movement;
-export type EntityType = 'blocos' | 'setores' | 'salas' | 'patrimonios' | 'movimentacoes';
+export type EntityType = 'blocos' | 'setores' | 'salas' | 'patrimonios' | 'movements';
