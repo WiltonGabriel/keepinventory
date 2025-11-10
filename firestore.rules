@@ -2,9 +2,8 @@
  * @fileoverview Firestore Security Rules for the inventory system.
  *
  * Core Philosophy:
- * This ruleset allows read and write access to any authenticated user for the main data collections.
- * The 'movements' log is a subcollection of each 'asset'. This simplifies security,
- * as access to an asset's history is controlled by the rules for that asset.
+ * This ruleset allows read and write access to authenticated users for the main data collections.
+ * It includes a specific rule for collection group queries on 'movements' to support the dashboard's activity log.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -33,7 +32,7 @@ service cloud.firestore {
 
     /**
      * @description Grants read and write access to any authenticated user for assets.
-     * This rule also governs access to the nested 'movements' subcollection for writes.
+     * This rule also governs write access to the nested 'movements' subcollection.
      */
     match /assets/{assetId} {
       allow read, write: if isSignedIn();
@@ -47,6 +46,16 @@ service cloud.firestore {
         allow create, delete: if isSignedIn();
         allow update: if false; // Deny updates to make logs immutable.
       }
+    }
+    
+    /**
+     * @description This rule allows a collection group query on 'movements'.
+     * It's necessary for features like the "Recent Activity" feed on the dashboard,
+     * which needs to query across all 'movements' subcollections.
+     * It grants read (list) access to any authenticated user.
+     */
+    match /{path=**}/movements/{movementId} {
+      allow list: if isSignedIn();
     }
 
     function isSignedIn() {
