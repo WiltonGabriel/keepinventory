@@ -1,57 +1,57 @@
 'use client';
 
-import {
-  useCollection,
-  useFirestore,
-  useMemoFirebase,
-} from '@/firebase';
-import {
-  collection,
-  query,
-  orderBy
-} from 'firebase/firestore';
+import { useState } from 'react';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, where, Timestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Block, Sector, Room, Asset, LogGeral } from '@/lib/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { getDocs } from 'firebase/firestore';
 
 export default function ReportsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
 
   // Hooks to get all necessary data
   const assetsCollection = useMemoFirebase(() => (firestore ? collection(firestore, 'patrimonios') : null), [firestore]);
   const roomsCollection = useMemoFirebase(() => (firestore ? collection(firestore, 'salas') : null), [firestore]);
   const sectorsCollection = useMemoFirebase(() => (firestore ? collection(firestore, 'setores') : null), [firestore]);
   const blocksCollection = useMemoFirebase(() => (firestore ? collection(firestore, 'blocos') : null), [firestore]);
-  const generalLogQuery = useMemoFirebase(() => (firestore ? query(collection(firestore, 'log_geral'), orderBy('timestamp', 'desc')) : null), [firestore]);
+  // We remove the useCollection for logs as we'll fetch them on-demand
+  // const generalLogQuery = useMemoFirebase(() => (firestore ? query(collection(firestore, 'log_geral'), orderBy('timestamp', 'desc')) : null), [firestore]);
 
   const { data: assets, isLoading: loadingAssets } = useCollection<Asset>(assetsCollection);
   const { data: rooms, isLoading: loadingRooms } = useCollection<Room>(roomsCollection);
   const { data: sectors, isLoading: loadingSectors } = useCollection<Sector>(sectorsCollection);
   const { data: blocks, isLoading: loadingBlocks } = useCollection<Block>(blocksCollection);
-  const { data: logs, isLoading: loadingLogs } = useCollection<LogGeral>(generalLogQuery);
-  
-  const isLoading = loadingAssets || loadingRooms || loadingSectors || loadingBlocks || loadingLogs;
+  // const { data: logs, isLoading: loadingLogs } = useCollection<LogGeral>(generalLogQuery);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
+  const isLoading = loadingAssets || loadingRooms || loadingSectors || loadingBlocks;
 
   const escapeCsvField = (field: string | null | undefined): string => {
     if (field === null || field === undefined) {
       return '""';
     }
     const stringField = String(field);
-    // If the field contains a comma, a quote, or a newline, wrap it in double quotes.
     if (/[",\n\r]/.test(stringField)) {
-      // Also, double up any existing double quotes.
       return `"${stringField.replace(/"/g, '""')}"`;
     }
     return `"${stringField}"`;
   };
 
   const downloadCsv = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([`\uFEFF${content}`], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel
     const link = document.createElement('a');
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
@@ -70,13 +70,13 @@ export default function ReportsPage() {
       return;
     }
 
-    const roomMap = new Map(rooms.map(r => [r.id, r]));
-    const sectorMap = new Map(sectors.map(s => [s.id, s]));
-    const blockMap = new Map(blocks.map(b => [b.id, b]));
+    const roomMap = new Map(rooms.map((r) => [r.id, r]));
+    const sectorMap = new Map(sectors.map((s) => [s.id, s]));
+    const blockMap = new Map(blocks.map((b) => [b.id, b]));
 
     const csvHeader = ['ID', 'Nome', 'Status', 'Sala', 'Setor', 'Bloco'].join(',');
-    
-    const csvRows = assets.map(asset => {
+
+    const csvRows = assets.map((asset) => {
       const room = roomMap.get(asset.roomId);
       const sector = room ? sectorMap.get(room.sectorId) : undefined;
       const block = sector ? blockMap.get(sector.blockId) : undefined;
@@ -98,30 +98,54 @@ export default function ReportsPage() {
     toast({ title: 'Sucesso!', description: 'O relatório de inventário foi gerado.' });
   };
 
-  const handleExportActivityLog = () => {
-    if (!logs) {
-      toast({ variant: 'destructive', title: 'Erro', description: 'Os logs de atividade ainda não foram carregados.' });
-      return;
-    }
-
-    const csvHeader = ['Data', 'Ação'].join(',');
+  const handleExportActivityLog = async () => {
+    if (!firestore) return;
+    setLoadingLogs(true);
     
-    const csvRows = logs.map(log => {
-      const formattedDate = log.timestamp
-        ? format(log.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })
-        : 'Data desconhecida';
+    try {
+      // Base query
+      let q = query(collection(firestore, 'log_geral'), orderBy('timestamp', 'desc'));
 
-      const row = [
-        escapeCsvField(formattedDate),
-        escapeCsvField(log.acao)
-      ];
-      return row.join(',');
-    });
+      // Apply date filters if they exist
+      if (startDate) {
+        q = query(q, where('timestamp', '>=', Timestamp.fromDate(startDate)));
+      }
+      if (endDate) {
+        // To make the range inclusive, set the time to the end of the day
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        q = query(q, where('timestamp', '<=', Timestamp.fromDate(endOfDay)));
+      }
 
-    const csvContent = [csvHeader, ...csvRows].join('\n');
-    downloadCsv(csvContent, `log_atividades_${new Date().toISOString().split('T')[0]}.csv`);
+      const querySnapshot = await getDocs(q);
+      const logs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as LogGeral[];
 
-    toast({ title: 'Sucesso!', description: 'O log de atividades foi gerado.' });
+      if (logs.length === 0) {
+        toast({ title: 'Nenhum resultado', description: 'Nenhum log de atividade encontrado para o período selecionado.' });
+        return;
+      }
+
+      const csvHeader = ['Data', 'Ação'].join(',');
+
+      const csvRows = logs.map((log) => {
+        const formattedDate = log.timestamp
+          ? format(log.timestamp.toDate(), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })
+          : 'Data desconhecida';
+
+        const row = [escapeCsvField(formattedDate), escapeCsvField(log.acao)];
+        return row.join(',');
+      });
+
+      const csvContent = [csvHeader, ...csvRows].join('\n');
+      downloadCsv(csvContent, `log_atividades_${new Date().toISOString().split('T')[0]}.csv`);
+
+      toast({ title: 'Sucesso!', description: 'O log de atividades foi gerado.' });
+    } catch (error) {
+      console.error("Error exporting activity log:", error);
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível exportar o log de atividades.' });
+    } finally {
+      setLoadingLogs(false);
+    }
   };
 
   return (
@@ -145,7 +169,9 @@ export default function ReportsPage() {
               Exportar Inventário Completo (.csv)
             </Button>
             {isLoading && <p className="text-sm text-muted-foreground mt-2 text-center">Carregando dados do inventário...</p>}
-            {!isLoading && (!assets || assets.length === 0) && <p className="text-sm text-muted-foreground mt-2 text-center">Nenhum item no inventário para exportar.</p>}
+            {!isLoading && (!assets || assets.length === 0) && (
+              <p className="text-sm text-muted-foreground mt-2 text-center">Nenhum item no inventário para exportar.</p>
+            )}
           </CardContent>
         </Card>
 
@@ -153,19 +179,49 @@ export default function ReportsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Relatórios de Atividade</CardTitle>
-            <CardDescription>Exporte o histórico de todas as movimentações e ações realizadas no sistema.</CardDescription>
+            <CardDescription>Exporte o histórico de todas as ações realizadas no sistema, opcionalmente filtrando por período.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button
-              onClick={handleExportActivityLog}
-              disabled={isLoading || !logs || logs.length === 0}
-              className="w-full"
-            >
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={'outline'}
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !startDate && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, 'PPP', { locale: ptBR }) : <span>Data de Início</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={'outline'}
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !endDate && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, 'PPP', { locale: ptBR }) : <span>Data de Fim</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Button onClick={handleExportActivityLog} disabled={loadingLogs} className="w-full">
               <Download className="mr-2 h-4 w-4" />
-              Exportar Log de Atividade (.csv)
+              {loadingLogs ? 'Gerando Relatório...' : 'Exportar Log de Atividade (.csv)'}
             </Button>
-             {isLoading && <p className="text-sm text-muted-foreground mt-2 text-center">Carregando logs de atividade...</p>}
-             {!isLoading && (!logs || logs.length === 0) && <p className="text-sm text-muted-foreground mt-2 text-center">Nenhuma atividade registrada para exportar.</p>}
           </CardContent>
         </Card>
       </div>
