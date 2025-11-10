@@ -51,9 +51,9 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
 
   useEffect(() => {
     if (defaultValues?.roomId) {
-        const room = inventoryService.getById('rooms', defaultValues.roomId) as Room;
+        const room = allRooms.find(r => r.id === defaultValues.roomId);
         if (room) {
-            const sector = inventoryService.getById('sectors', room.sectorId) as Sector;
+            const sector = allSectors.find(s => s.id === room.sectorId);
             if (sector) {
                 setSelectedBlock(sector.blockId);
                 setSelectedSector(sector.id);
@@ -61,12 +61,12 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
             }
         }
     }
-  }, [defaultValues, form]);
+  }, [defaultValues, form, allRooms, allSectors]);
 
 
   useEffect(() => {
     if (selectedBlock) {
-      setAvailableSectors(inventoryService.getSectorsByBlockId(selectedBlock));
+      setAvailableSectors(allSectors.filter(s => s.blockId === selectedBlock));
     } else {
       setAvailableSectors([]);
     }
@@ -76,7 +76,7 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
 
   useEffect(() => {
     if (selectedSector) {
-      setAvailableRooms(inventoryService.getRoomsBySectorId(selectedSector));
+      setAvailableRooms(allRooms.filter(r => r.sectorId === selectedSector));
     } else {
       setAvailableRooms([]);
     }
@@ -205,3 +205,5 @@ export function AssetForm({ onSubmit, defaultValues, blocks, allSectors, allRoom
     </Form>
   );
 }
+
+    

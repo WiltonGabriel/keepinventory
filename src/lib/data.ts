@@ -48,7 +48,6 @@ const seedData = () => {
     { id: 'sector-exatas', name: 'Ciências Exatas', abbreviation: 'EXA', blockId: 'block-b' },
     { id: 'sector-acad-b', name: 'Acadêmico Geral B', abbreviation: 'ACB', blockId: 'block-b' },
 
-
     // Bloco C - Laboratórios & Acadêmico
     { id: 'sector-labinfo', name: 'Laboratórios de Informática', abbreviation: 'LAB', blockId: 'block-c' },
     { id: 'sector-labsaude', name: 'Laboratórios de Saúde', abbreviation: 'SAU', blockId: 'block-c' },
@@ -144,6 +143,7 @@ export const inventoryService = {
   add: (entityType: EntityType, item: Omit<Entity, 'id'>): Entity | undefined => {
     const items = getFromStorage<Entity>(KEYS[entityType.toUpperCase() as keyof typeof KEYS]);
     let newItem: Entity;
+
     if (entityType === 'assets') {
       const assetData = item as Omit<Asset, 'id'>;
       const room = inventoryService.getById('rooms', assetData.roomId) as Room;
@@ -172,6 +172,7 @@ export const inventoryService = {
       const newId = `${sector.abbreviation}${nextNumber.toString().padStart(3, '0')}`;
 
       newItem = { ...assetData, id: newId, status: assetData.status || "Em Uso" } as Asset;
+
     } else {
        const prefix = entityType.slice(0, -1);
        newItem = { ...item, id: generateId(prefix) } as Entity;
