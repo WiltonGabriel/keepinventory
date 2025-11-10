@@ -4,6 +4,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthProvider, useAuthSession } from '@/auth/provider';
+import { FirebaseClientProvider } from '@/firebase'; // Importado aqui
 import {
   SidebarProvider,
   Sidebar,
@@ -52,36 +53,38 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
 
   // Se o usuário estiver autenticado, exibe o layout principal da aplicação.
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-2 p-2">
-            <Building className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-lg">KeepInventory</span>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <MainNav />
-        </SidebarContent>
-        <SidebarFooter>
-          <div className="flex items-center gap-2 p-2">
-            <Avatar>
-               <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col truncate">
-                <span className="text-sm font-semibold truncate">{user.email}</span>
+    <FirebaseClientProvider> {/* O provider do Firebase agora envolve apenas o conteúdo protegido */}
+      <SidebarProvider>
+        <Sidebar>
+          <SidebarHeader>
+            <div className="flex items-center gap-2 p-2">
+              <Building className="h-6 w-6 text-primary" />
+              <span className="font-semibold text-lg">KeepInventory</span>
             </div>
-            <Button variant="ghost" size="icon" onClick={signOut} className="ml-auto">
-                <LogOut className="h-4 w-4"/>
-            </Button>
-          </div>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset className="flex flex-col">
-        <SiteHeader />
-        <main className="flex-1 p-4 sm:px-6 sm:py-0">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+          </SidebarHeader>
+          <SidebarContent>
+            <MainNav />
+          </SidebarContent>
+          <SidebarFooter>
+            <div className="flex items-center gap-2 p-2">
+              <Avatar>
+                 <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col truncate">
+                  <span className="text-sm font-semibold truncate">{user.email}</span>
+              </div>
+              <Button variant="ghost" size="icon" onClick={signOut} className="ml-auto">
+                  <LogOut className="h-4 w-4"/>
+              </Button>
+            </div>
+          </SidebarFooter>
+        </Sidebar>
+        <SidebarInset className="flex flex-col">
+          <SiteHeader />
+          <main className="flex-1 p-4 sm:px-6 sm:py-0">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </FirebaseClientProvider>
   );
 }
 

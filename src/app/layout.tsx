@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { Toaster } from '@/components/ui/toaster';
-import { FirebaseClientProvider } from '@/firebase'; // Import global provider
 
 export const metadata: Metadata = {
   title: 'KeepInventory',
@@ -31,11 +30,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <Providers>
-            {/* O FirebaseClientProvider agora envolve toda a aplicação,
-                mas a lógica de autenticação está no AuthProvider dentro do (app) layout */}
-           <FirebaseClientProvider>
-              {children}
-           </FirebaseClientProvider>
+            {/* O FirebaseClientProvider foi removido daqui para ser colocado
+                apenas no layout que protege as rotas autenticadas. */}
+            {children}
           <Toaster />
         </Providers>
       </body>
