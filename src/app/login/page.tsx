@@ -66,7 +66,8 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+    <main className="flex min-h-screen flex-col items-center justify-between bg-background p-4">
+      <div /> {/* Elemento vazio para empurrar o conteúdo para o centro */}
       <div className="mx-auto flex w-full max-w-sm flex-col items-center justify-center space-y-6">
         <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-5xl font-bold text-primary">UNIVAG</h1>
@@ -104,6 +105,9 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </div>
+      <footer className="w-full text-center text-sm text-muted-foreground">
+        KeepInventory
+      </footer>
     </main>
   );
 }
