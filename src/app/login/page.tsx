@@ -23,6 +23,18 @@ export default function LoginPage() {
 
   const handleAuth = async () => {
     setIsLoading(true);
+    
+    // Verifica as credenciais antes de prosseguir
+    if (email.toLowerCase() !== 'admin@univag.com.br' || password !== '123456') {
+      toast({
+        variant: 'destructive',
+        title: 'Credenciais Inválidas',
+        description: 'Por favor, verifique seu e-mail e senha.',
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Tenta fazer o login primeiro.
       await signInWithEmailAndPassword(auth, email, password);
@@ -33,7 +45,7 @@ export default function LoginPage() {
       if (error.code === AuthErrorCodes.USER_DELETED || error.code === 'auth/user-not-found') {
         try {
           await createUserWithEmailAndPassword(auth, email, password);
-          toast({ title: 'Conta criada com sucesso!', description: 'Redirecionando para o dashboard...' });
+          toast({ title: 'Conta de administrador criada!', description: 'Redirecionando para o dashboard...' });
           router.push('/dashboard');
         } catch (createError: any) {
           toast({ variant: 'destructive', title: 'Erro ao criar conta', description: createError.message });
